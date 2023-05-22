@@ -7,6 +7,7 @@ import (
 	"github.com/lightsaid/ebook/internal/dbrepo"
 	"github.com/lightsaid/ebook/internal/models"
 	"github.com/lightsaid/ebook/pkg/logger"
+	"github.com/lightsaid/ebook/pkg/validator"
 )
 
 func (a *application) addBook(w http.ResponseWriter, r *http.Request) {
@@ -21,7 +22,12 @@ func (a *application) addBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: 验证参数
+	v := validator.New()
+	models.ValidateBook(v, book)
+	if !v.Valid() {
+		a.writeJSON(w, http.StatusBadRequest, v.Errors)
+		return
+	}
 
 	id, err := a.store.Book.Insert(book)
 	if err != nil {
@@ -63,6 +69,14 @@ func (a *application) putBook(w http.ResponseWriter, r *http.Request) {
 		a.writeJSON(w, http.StatusBadRequest, msgWrapp(err.Error()))
 		return
 	}
+
+	v := validator.New()
+	models.ValidateBook(v, &book)
+	if !v.Valid() {
+		a.writeJSON(w, http.StatusBadRequest, v.Errors)
+		return
+	}
+
 	err := a.store.Book.Update(book.ID, &book)
 	if err != nil {
 		logger.ErrorfoLog.Println("putbook failed -> ", err)
@@ -125,6 +139,15 @@ func (a *application) bulkInsert(w http.ResponseWriter, r *http.Request) {
 	if len(books) == 0 {
 		a.writeJSON(w, http.StatusBadRequest, msgWrapp("参数不能为空"))
 		return
+	}
+
+	for _, book := range books {
+		v := validator.New()
+		models.ValidateBook(v, book)
+		if !v.Valid() {
+			a.writeJSON(w, http.StatusBadRequest, v.Errors)
+			return
+		}
 	}
 
 	aff, err := a.store.Book.BulkInsert(books)
