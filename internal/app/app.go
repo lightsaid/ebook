@@ -11,13 +11,15 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/lightsaid/ebook/internal/config"
 	"github.com/lightsaid/ebook/internal/dbrepo"
+	"github.com/lightsaid/ebook/internal/fileupload"
 	"github.com/lightsaid/ebook/pkg/logger"
 )
 
 // application 一个管理API服务的结构体
 type application struct {
-	cfg   config.AppConfig
-	store *dbrepo.Repository
+	cfg      config.AppConfig
+	store    *dbrepo.Repository
+	uploader fileupload.FileUploader
 }
 
 func Serve() error {
@@ -57,9 +59,13 @@ func newApplication() *application {
 	db.SetMaxIdleConns(cfg.MaxIdleConns)
 	db.SetConnMaxIdleTime(cfg.MaxIdleTimeToDuration())
 
+	// 文件上传接口
+	uploader := fileupload.NewLocalUplader(cfg.UploadPath, cfg.AllowsExt, cfg.MaxUploadByte)
+
 	a := &application{
-		cfg:   cfg,
-		store: dbrepo.NewRepository(db),
+		cfg:      cfg,
+		store:    dbrepo.NewRepository(db),
+		uploader: uploader,
 	}
 
 	return a

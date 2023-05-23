@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/lightsaid/ebook/internal/dbrepo"
+	"github.com/lightsaid/ebook/internal/fileupload"
 	"github.com/lightsaid/ebook/pkg/logger"
 )
 
@@ -69,6 +70,7 @@ func (a *application) writeJSON(w http.ResponseWriter, status int, data interfac
 func (a *application) errorResponse(w http.ResponseWriter, err error) {
 	logger.ErrorfoLog.Println("errorResponse -> ", err)
 	var status = http.StatusInternalServerError
+	// 判断是否是数据库操作错误
 	if ok := dbrepo.IsCustomDBError(err); ok {
 		if errors.Is(err, dbrepo.ErrNotFound) {
 			status = http.StatusNotFound
@@ -78,6 +80,13 @@ func (a *application) errorResponse(w http.ResponseWriter, err error) {
 		a.writeJSON(w, status, msgWrapp(err.Error()))
 		return
 	}
+
+	// 判断是否是上传错误
+	if fileupload.IsUploaderError(err) {
+		a.writeJSON(w, http.StatusUnprocessableEntity, msgWrapp(err.Error()))
+		return
+	}
+
 	a.writeJSON(w, status, "服务开了小差，请稍后重试～")
 }
 
@@ -85,9 +94,9 @@ func (a *application) methodNotAllowed(w http.ResponseWriter, allowMethod ...str
 	header := http.Header(make(map[string][]string))
 
 	var methods []string
-	for _, m := range allowMethod {
-		methods = append(methods, m)
-	}
+
+	methods = append(methods, allowMethod...)
+
 	header.Add("Allow", strings.Join(methods, ","))
 
 	a.writeJSON(

@@ -1,8 +1,10 @@
 package app
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
+	"text/template"
 
 	"github.com/lightsaid/ebook/internal/dbrepo"
 	"github.com/lightsaid/ebook/internal/models"
@@ -176,4 +178,35 @@ func (a *application) testTx(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.methodNotAllowed(w, http.MethodPost, http.MethodGet)
+}
+
+func (a *application) uploadFile(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		t, err := template.ParseFiles("templates/upload.html")
+		if err != nil {
+			logger.ErrorfoLog.Println("ParseFiles failed: " + err.Error())
+			a.errorResponse(w, errors.New("page not found"))
+			return
+		}
+		if err = t.Execute(w, nil); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+	} else if r.Method == http.MethodPost {
+		file, header, err := r.FormFile("file")
+		if err != nil {
+			logger.ErrorfoLog.Println("r.FormFile('file') failed: " + err.Error())
+			a.errorResponse(w, errors.New("file error"))
+			return
+		}
+		defer file.Close()
+
+		fileurl, err := a.uploader.SaveFile(file, header)
+		if err != nil {
+			a.errorResponse(w, err)
+			return
+		}
+		a.writeJSON(w, http.StatusOK, msgWrapp(fileurl))
+	} else {
+		a.methodNotAllowed(w, http.MethodPost, http.MethodGet)
+	}
 }

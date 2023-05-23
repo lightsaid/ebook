@@ -17,12 +17,15 @@ const (
 
 // AppConfig 应用程序配置
 type AppConfig struct {
-	Env          string `json:"env"`          // 环境参数：dev | prod
-	Port         int    `json:"port"`         // 服务端口
-	DSN          string `json:"dsn"`          // 数据库链接
-	MaxOpenConns int    `json:"maxOpenConns"` // 数据库最大链接数
-	MaxIdleConns int    `json:"maxIdleConns"` // 数据库链接最大空闲数
-	MaxIdleTime  string `json:"maxIdleTime"`  // 数据库链接最大空闲时间
+	Env           string   `json:"env"`          // 环境参数：dev | prod
+	Port          int      `json:"port"`         // 服务端口
+	DSN           string   `json:"dsn"`          // 数据库链接
+	MaxOpenConns  int      `json:"maxOpenConns"` // 数据库最大链接数
+	MaxIdleConns  int      `json:"maxIdleConns"` // 数据库链接最大空闲数
+	MaxIdleTime   string   `json:"maxIdleTime"`  // 数据库链接最大空闲时间
+	UploadPath    string   `json:"uploadPath"`
+	AllowsExt     []string `json:"allowsExt"`
+	MaxUploadByte int64    `json:"maxUploadByte"`
 }
 
 // MaxIdleTimeToDuration 将 MaxIdleTime 转换成 time.Duration 返回，如果转换出错，返回默认值

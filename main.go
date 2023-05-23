@@ -1,12 +1,16 @@
 package main
 
 import (
+	"errors"
 	"log"
 
 	"github.com/lightsaid/ebook/internal/app"
 )
 
+var ErrrNotAllowExt = errors.New("不支持文件类型")
+
 func main() {
+
 	if err := app.Serve(); err != nil {
 		log.Fatal(err)
 	}

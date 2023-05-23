@@ -18,8 +18,14 @@ func (a *application) routes() http.Handler {
 
 	// 一些测试路由
 	if a.cfg.Env == config.Env_Dev {
-		mux.HandleFunc("/v1/test/tx", a.testTx) // GET/POST tx?id=1 测试事物路由
+		mux.HandleFunc("/v1/test/tx", a.testTx)    // GET/POST tx?id=1 测试事物路由
+		mux.HandleFunc("/v1/upload", a.uploadFile) // GET/POST 测试文件上传接口
+
 	}
+
+	// 定义一个文件服务
+	fileServer := http.FileServer(http.Dir("templates/static"))
+	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
 
 	return mux
 }
