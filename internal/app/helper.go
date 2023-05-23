@@ -63,6 +63,8 @@ func (a *application) writeJSON(w http.ResponseWriter, status int, data interfac
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	// NOTE: 设置请求最终状态，用于中间件 logRequest 获取记录
+	w.Header().Set("Stauts", http.StatusText(status))
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(data)
 }

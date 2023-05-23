@@ -18,8 +18,9 @@ func (a *application) routes() http.Handler {
 
 	// 一些测试路由
 	if a.cfg.Env == config.Env_Dev {
-		mux.HandleFunc("/v1/test/tx", a.testTx)    // GET/POST tx?id=1 测试事物路由
-		mux.HandleFunc("/v1/upload", a.uploadFile) // GET/POST 测试文件上传接口
+		// TODO: 实现逻辑
+		mux.Handle("/v1/test/tx", a.authenticate(http.HandlerFunc(a.testTx))) // GET/POST tx?id=1 测试事物路由
+		mux.HandleFunc("/v1/upload", a.uploadFile)                            // GET/POST 测试文件上传接口
 
 	}
 
@@ -27,5 +28,6 @@ func (a *application) routes() http.Handler {
 	fileServer := http.FileServer(http.Dir("templates/static"))
 	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
 
-	return mux
+	// 中间件
+	return a.recoverPanic(a.logRequest(mux))
 }
