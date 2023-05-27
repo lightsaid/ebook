@@ -21,7 +21,7 @@ type Queryable interface {
 	PrepareContext(ctx context.Context, query string) (*sql.Stmt, error)
 }
 
-// NOTE: 采用这这种方式，是为了在执行事务上可以复用代码，更加灵活行
+// NOTE: 采用这这种方式，是为了在执行事务上可以复用代码，更加灵活性
 // NewRepository 创建一个Repository仓库，使用 Queryable 接口，同时兼容 sql.DB 和 sql.Tx 接口
 func NewRepository(db Queryable) *Repository {
 	return &Repository{
