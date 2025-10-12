@@ -7,35 +7,27 @@ import (
 )
 
 type Book struct {
-	ID          uint      `json:"id"`
-	ISBN        string    `json:"isbn"`
-	Title       string    `json:"title"`
-	Poster      string    `json:"poster"`
-	Pages       uint      `json:"pages"`
-	Price       float32   `json:"price"`
-	PublishedAt time.Time `json:"published_at"`
-	CreatedAt   time.Time `json:"-"`
-	UpdatedAt   time.Time `json:"-"`
+	ID          uint64     `db:"id" json:"id"`
+	ISBN        string     `db:"isbn" json:"isbn"`
+	Title       string     `db:"title" json:"title"`
+	Subtitle    string     `db:"subtitle" json:"subtitle"`
+	AuthorID    uint64     `db:"author_id" json:"authorId"`
+	CoverUrl    string     `db:"cover_url" json:"coverUrl"`
+	PublisherID uint64     `db:"publisher_id" json:"publisherId"`
+	Pubdate     time.Time  `db:"pubdate" json:"pubdate"`
+	Price       uint       `db:"price" json:"price"`
+	Status      int        `db:"status" json:"status"`
+	Type        int        `db:"type" json:"type"`
+	Stock       uint       `db:"stock" json:"stock"`
+	SourceUrl   string     `db:"source_url" json:"sourceUrl"`
+	Description string     `db:"description" json:"description"`
+	Created_at  time.Time  `db:"created_at" json:"createdAt"`
+	UpdatedAt   time.Time  `db:"updated_at" json:"UpdatedAt"`
+	DeletedAt   *time.Time `db:"deleted_at" json:"-"`
 }
 
 func ValidateBook(v *validator.Validator, book *Book) {
 	v.Check(validator.IsISBN(book.ISBN), "isbn", "请输入合法的ISBN")
 	v.Check(book.Title != "", "title", "title 不能为空")
 	v.Check(book.Price >= 0, "price", "价格不能为负数")
-	v.Check(book.Pages > 0, "pages", "页数小于0")
-	v.Check(book.Poster != "", "poster", "封面不能为空")
-	v.Check(!book.PublishedAt.IsZero(), "published_at", "published_at 不能为空")
 }
-
-// func NewBook(isbn, title, poster string, pages uint, price float32, publishedAt time.Time) Book {
-// 	return Book{
-// 		ISBN:        isbn,
-// 		Title:       title,
-// 		Poster:      poster,
-// 		Pages:       pages,
-// 		Price:       price,
-// 		PublishedAt: publishedAt,
-// 		CreatedAt:   time.Now(),
-// 		UpdatedAt:   time.Now(),
-// 	}
-// }

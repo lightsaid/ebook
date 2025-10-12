@@ -13,3 +13,5 @@ CREATE TABLE book (
     updated_at TIMESTAMP NOT NULL default NOW() COMMENT '更新时间',
     unique index unq_isbn(`isbn`)
 ) ENGINE=InnoDB CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT '图书表';
+
+

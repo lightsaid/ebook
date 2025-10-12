@@ -3,46 +3,36 @@ package dbrepo
 import (
 	"database/sql"
 	"errors"
-	"strings"
-
-	"github.com/go-sql-driver/mysql"
 )
 
-var (
-	ErrNotFound          = errors.New("记录不存在")
-	ErrISBNAlreadyExists = errors.New("isbn 已经存在")
-	ErrUpdateFailed      = errors.New("更新失败")
-	ErrDelFailed         = errors.New("删除失败")
-)
+var ErrInsertIDZero = errors.New("新增数据返回的id为0")
 
-func IsCustomDBError(err error) bool {
-	switch {
-	case errors.Is(err, ErrNotFound),
-		errors.Is(err, ErrISBNAlreadyExists),
-		errors.Is(err, ErrUpdateFailed),
-		errors.Is(err, ErrDelFailed):
-		return true
+// insertErrorHandler 公共处理新增数据的错误
+func insertErrorHandler(result sql.Result, err error) (uint64, error) {
+	if err != nil {
+		return 0, err
 	}
-	return false
+	newID, err := result.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+	if newID <= 0 {
+		return 0, ErrInsertIDZero
+	}
+	return uint64(newID), nil
 }
 
-// 统一处理mysql错误
-func handleMySQLError(err error) error {
+// updateErrorHandler 公共处理更新数据的错误
+func updateErrorHandler(result sql.Result, err error) error {
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return ErrNotFound
-		}
-
-		var mysqlErr *mysql.MySQLError
-		// 重复键错误, 具体哪个字段重复，由具体业务判断
-		if errors.As(err, &mysqlErr) && mysqlErr.Number == 1062 {
-			// NOTE: unq_isbn 是数据库定义唯一索引名字
-			if strings.Contains(err.Error(), "unq_isbn") {
-				return ErrISBNAlreadyExists
-			}
-			// NOTE: 根据业务添加其他的
-		}
+		return err
 	}
-
-	return err
+	eff, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if eff <= 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }

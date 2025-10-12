@@ -1,20 +1,20 @@
 package main
 
-import (
-	"errors"
-	"log"
+// import (
+// 	"errors"
+// 	"log"
 
-	"github.com/lightsaid/ebook/internal/app"
-)
+// 	"github.com/lightsaid/ebook/internal/app"
+// )
 
-var ErrrNotAllowExt = errors.New("不支持文件类型")
+// var ErrrNotAllowExt = errors.New("不支持文件类型")
 
-func main() {
+// func main() {
 
-	if err := app.Serve(); err != nil {
-		log.Fatal(err)
-	}
-}
+// 	if err := app.Serve(); err != nil {
+// 		log.Fatal(err)
+// 	}
+// }
 
 // NOTE: 例子1
 // // 第三方的接口定义

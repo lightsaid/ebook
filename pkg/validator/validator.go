@@ -2,6 +2,7 @@ package validator
 
 import (
 	"fmt"
+	"regexp"
 )
 
 // Validator 验证器，Error 保存字段和对应的错误信息，如果有
@@ -48,11 +49,15 @@ func (v *Validator) MaxLength(field string, length int) bool {
 	return true
 }
 
-// Check 检查，当 expr 表达式为 false 则添加错误
-//
-// 因此，expr 可以理解为满足添加的表达式
+// Check检查，当expr表达式为false添加错误，
+// 因此expr可以理解为满足条件的表达式
 func (v *Validator) Check(expr bool, field, message string) {
 	if !expr {
 		v.AddError(field, message)
 	}
+}
+
+// Matches value 是否满足rx正则
+func Matches(value string, rx *regexp.Regexp) bool {
+	return rx.MatchString(value)
 }
