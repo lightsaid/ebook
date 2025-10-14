@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
@@ -41,9 +43,17 @@ type Queryable interface {
 	SelectContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error
 }
 
+var (
+	Db *sqlx.DB
+)
+
+const (
+	defaultDuration = 3 * time.Second
+)
+
 func Open() (*sqlx.DB, error) {
 	dsn := fmt.Sprintf(
-		"%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True",
+		"%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 		"root",
 		"root.cc",
 		"127.0.0.1",
@@ -63,7 +73,16 @@ func Open() (*sqlx.DB, error) {
 	db.SetMaxOpenConns(25)
 	db.SetMaxIdleConns(15)
 
+	Db = db
+
 	return db, nil
+}
+
+func Close() {
+	log.Println("closeing db")
+	if err := Db.Close(); err != nil {
+		log.Println("Close DB: ", err)
+	}
 }
 
 func execTx(ctx context.Context, query Queryable, fn func(Repository) error) error {
@@ -85,4 +104,8 @@ func execTx(ctx context.Context, query Queryable, fn func(Repository) error) err
 		return err
 	}
 	return tx.Commit()
+}
+
+func makeCtx() (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.Background(), defaultDuration)
 }

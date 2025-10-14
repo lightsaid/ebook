@@ -21,7 +21,8 @@ type Book struct {
 	Stock       uint       `db:"stock" json:"stock"`
 	SourceUrl   string     `db:"source_url" json:"sourceUrl"`
 	Description string     `db:"description" json:"description"`
-	Created_at  time.Time  `db:"created_at" json:"createdAt"`
+	Version     string     `db:"version" json:"version"`
+	CreatedAt   time.Time  `db:"created_at" json:"createdAt"`
 	UpdatedAt   time.Time  `db:"updated_at" json:"UpdatedAt"`
 	DeletedAt   *time.Time `db:"deleted_at" json:"-"`
 }
@@ -29,5 +30,4 @@ type Book struct {
 func ValidateBook(v *validator.Validator, book *Book) {
 	v.Check(validator.IsISBN(book.ISBN), "isbn", "请输入合法的ISBN")
 	v.Check(book.Title != "", "title", "title 不能为空")
-	v.Check(book.Price >= 0, "price", "价格不能为负数")
 }

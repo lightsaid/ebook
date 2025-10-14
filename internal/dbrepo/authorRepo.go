@@ -6,7 +6,7 @@ import (
 
 type AuthorRepo interface {
 	Create(authorName string) (uint64, error)
-	Update(authorName string) error
+	Update(id uint64, authorName string) error
 	Get(id uint64) (*models.Author, error)
 	List() ([]*models.Author, error)
 	Delete(id uint64) error
@@ -31,9 +31,9 @@ func (r *authorRepo) Create(authorName string) (uint64, error) {
 	return insertErrorHandler(result, err)
 }
 
-func (r *authorRepo) Update(authorName string) error {
-	sql := `update author set author_name = ? where deleted_at is not null;`
-	result, err := r.DB.Exec(sql, authorName)
+func (r *authorRepo) Update(id uint64, authorName string) error {
+	sql := `update author set author_name = ? where id =? and deleted_at is null;`
+	result, err := r.DB.Exec(sql, authorName, id)
 	return updateErrorHandler(result, err)
 }
 

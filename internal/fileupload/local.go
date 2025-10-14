@@ -63,7 +63,7 @@ func (l *LocalUploader) SaveFile(file multipart.File, header *multipart.FileHead
 	defer src.Close()
 
 	// 构建本地存储路径
-	dstPath := l.uploadDir + random.UUID() + ext
+	dstPath := l.uploadDir + random.RandomString(10) + ext
 
 	// 创建目标文件
 	newFile, err := os.Create(dstPath)
