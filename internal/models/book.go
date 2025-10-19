@@ -25,6 +25,10 @@ type Book struct {
 	CreatedAt   time.Time  `db:"created_at" json:"createdAt"`
 	UpdatedAt   time.Time  `db:"updated_at" json:"UpdatedAt"`
 	DeletedAt   *time.Time `db:"deleted_at" json:"-"`
+
+	Author     *Author     `json:"author"`
+	Publisher  *Publisher  `json:"publisher"`
+	Categories []*Category `json:"categories"`
 }
 
 func ValidateBook(v *validator.Validator, book *Book) {
