@@ -11,8 +11,3 @@ type Category struct {
 	UpdatedAt    time.Time  `db:"updated_at" json:"UpdatedAt"`
 	DeletedAt    *time.Time `db:"deleted_at" json:"-"`
 }
-
-type bookCategory struct {
-	BookID     uint64 `db:"book_id" json:"bookId"`
-	CategoryID uint64 `db:"category_id" json:"categoryId"`
-}

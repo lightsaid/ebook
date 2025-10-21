@@ -80,6 +80,28 @@ func (r *bookRepo) Create(book *models.Book) (uint64, error) {
 }
 
 func (r *bookRepo) CreateTx(book *models.Book) (uint64, error) {
+	ctx, cancel := makeCtx()
+	defer cancel()
+
+	// 不存在分类
+	if book.Categories != nil && len(book.Categories) == 0 {
+		return r.Create(book)
+	}
+
+	// 存在分类
+	execTx(ctx, r.DB, func(r Repository) error {
+		bookID, err := r.BookRepo.Create(book)
+		if err != nil {
+			return err
+		}
+		list := make([]models.BookCategory, 0, len(book.Categories))
+		for _, x := range list {
+			list = append(list, models.BookCategory{BookID: bookID, CategoryID: x.CategoryID})
+		}
+
+		return r.BookCategoryRepo.BatchInsert(list)
+	})
+
 	return 0, nil
 }
 
