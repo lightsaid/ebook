@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func createBook(t *testing.T) *models.Book {
+func makeEmptyIDBook(t *testing.T) *models.Book {
 	c := createAuthor(t)
 	p := createPublisher(t)
 	var status = 0
@@ -35,6 +35,11 @@ func createBook(t *testing.T) *models.Book {
 		Description: random.RandomString(64),
 	}
 
+	return b1
+}
+
+func createBook(t *testing.T) *models.Book {
+	b1 := makeEmptyIDBook(t)
 	id, err := tRepo.BookRepo.Create(b1)
 	require.NoError(t, err)
 	require.True(t, id > 0)
@@ -105,4 +110,52 @@ func TestListBook(t *testing.T) {
 	by, err := json.MarshalIndent(list, "", "\t")
 	require.NoError(t, err)
 	fmt.Println(string(by))
+}
+
+func createBookTx(t *testing.T) *models.Book {
+	b1 := makeEmptyIDBook(t)
+	c1 := createCategory(t)
+	c2 := createCategory(t)
+	c3 := createCategory(t)
+
+	b1.Categories = append(b1.Categories, c1)
+	b1.Categories = append(b1.Categories, c2)
+	b1.Categories = append(b1.Categories, c3)
+	newID, err := tRepo.BookRepo.CreateTx(b1)
+
+	require.NoError(t, err)
+	require.True(t, newID > 0)
+
+	b2, err := tRepo.BookRepo.Get(newID)
+	require.NoError(t, err)
+	require.NotEmpty(t, b2)
+	require.True(t, b2.ID > 0)
+
+	return b2
+}
+
+func TestCreateTx(t *testing.T) {
+	_ = createBookTx(t)
+}
+
+func TestUpdateTx(t *testing.T) {
+	b1 := createBookTx(t)
+
+	c1 := createCategory(t)
+	c2 := createCategory(t)
+	list := make([]*models.Category, 0, 2)
+	list = append(list, c1)
+	list = append(list, c2)
+
+	b2, err := tRepo.BookRepo.Get(b1.ID)
+	require.NoError(t, err)
+
+	b2.Categories = list
+	b2.Title = random.RandomString(10)
+	b2.Subtitle = random.RandomString(20)
+	b2.CoverUrl = random.RandomString(20)
+	b2.Price = uint(random.RandomInt(2000, 10000))
+
+	err = tRepo.BookRepo.UpdateTx(b2)
+	require.NoError(t, err)
 }

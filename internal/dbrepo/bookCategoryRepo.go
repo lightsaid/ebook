@@ -1,6 +1,9 @@
 package dbrepo
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/lightsaid/ebook/internal/models"
 )
 
@@ -34,21 +37,25 @@ func (r *bookCategoryRepo) Create(bc models.BookCategory) (uint64, error) {
 }
 
 func (r *bookCategoryRepo) BatchInsert(list []models.BookCategory) error {
+	if len(list) <= 0 {
+		return ErrBookCategoryNoRows
+	}
 	sql := `insert into book_categories(book_id, category_id) values `
+	parts := make([]string, len(list))
 	args := []any{}
 	for i, x := range list {
-		if i > 0 {
-			sql += ","
-		}
-		sql += "(?, ?)"
+		parts[i] = "(?, ?)"
 		args = append(args, x.BookID, x.CategoryID)
 	}
-
+	sql += strings.Join(parts, ",")
+	fmt.Println("BatchInsert: ", sql)
 	ctx, cancel := makeCtx()
 	defer cancel()
 
-	_, err := insertErrorHandler(r.DB.ExecContext(ctx, sql, args...))
+	// NOTE: 这里只会返回影响行数，因此不能使用 insertErrorHandler
+	// _, err := insertErrorHandler(r.DB.ExecContext(ctx, sql, args...))
 
+	err := updateErrorHandler(r.DB.ExecContext(ctx, sql, args...))
 	return err
 }
 

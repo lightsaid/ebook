@@ -2,7 +2,11 @@ package dbrepo
 
 import (
 	"context"
+	"database/sql"
+	"errors"
+	"log"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/lightsaid/ebook/internal/models"
 )
 
@@ -87,22 +91,23 @@ func (r *bookRepo) CreateTx(book *models.Book) (uint64, error) {
 	if book.Categories != nil && len(book.Categories) == 0 {
 		return r.Create(book)
 	}
-
+	var bookID uint64
 	// 存在分类
-	execTx(ctx, r.DB, func(r Repository) error {
-		bookID, err := r.BookRepo.Create(book)
+	err := execTx(ctx, r.DB, func(r Repository) error {
+		var err error
+		bookID, err = r.BookRepo.Create(book)
 		if err != nil {
 			return err
 		}
 		list := make([]models.BookCategory, 0, len(book.Categories))
-		for _, x := range list {
-			list = append(list, models.BookCategory{BookID: bookID, CategoryID: x.CategoryID})
+		for _, x := range book.Categories {
+			list = append(list, models.BookCategory{BookID: bookID, CategoryID: x.ID})
 		}
 
 		return r.BookCategoryRepo.BatchInsert(list)
 	})
 
-	return 0, nil
+	return bookID, err
 }
 
 func (r *bookRepo) Get(id uint64) (book *models.Book, err error) {
@@ -133,15 +138,56 @@ func (r *bookRepo) Update(book *models.Book) error {
 	ctx, cancel := makeCtx()
 	defer cancel()
 	args := bookFieldToSQLArgs(book)
-	return updateErrorHandler(r.DB.NamedExecContext(ctx, sql, args))
+
+	// NOTE: 方式1:
+	// return updateErrorHandler(r.DB.NamedExecContext(ctx, query, args))
+
+	// NOTE: 方式2: 方便查看sql和参数，便于日志输出
+	query, argv, err := sqlx.Named(sql, args)
+	if err != nil {
+		log.Println("bookRepo.Update sqlx.Named falil ", err)
+		return err
+	}
+
+	log.Println("query ", query)
+	log.Println("argv  ", argv)
+
+	query = r.DB.Rebind(query)
+
+	return updateErrorHandler(r.DB.ExecContext(ctx, query, argv...))
 }
 
+// UpdateTx 通过事务更新图书，同时更新bookCategory表
 func (r *bookRepo) UpdateTx(book *models.Book) error {
-	execTx(context.Background(), r.DB, func(r Repository) error {
-		// r.BookRepo.Create(nil)
-		return nil
+	err := execTx(context.Background(), r.DB, func(r Repository) error {
+		// 更新图书
+		err := r.BookRepo.Update(book)
+		if err != nil {
+			log.Println("[UpdateTx]->[r.BookRepo.Update] fail: ", err)
+			return err
+		}
+
+		// 删除图书和分类关系（book_categories）
+		err = r.BookCategoryRepo.DeleteByBookID(book.ID)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			log.Println("[UpdateTx]->[r.BookCategoryRepo.DeleteByBookID] fail: ", err)
+			return err
+		}
+
+		if len(book.Categories) == 0 {
+			return nil
+		}
+
+		// 构建映射关系
+		list := make([]models.BookCategory, 0, len(book.Categories))
+		for _, x := range book.Categories {
+			list = append(list, models.BookCategory{BookID: book.ID, CategoryID: x.ID})
+		}
+
+		// 添加新的对应关系
+		return r.BookCategoryRepo.BatchInsert(list)
 	})
-	return nil
+	return err
 }
 
 func (r *bookRepo) List(limit, offset int) ([]*models.Book, error) {
