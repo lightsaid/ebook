@@ -159,3 +159,28 @@ func TestUpdateTx(t *testing.T) {
 	err = tRepo.BookRepo.UpdateTx(b2)
 	require.NoError(t, err)
 }
+
+func TestGetBookByID(t *testing.T) {
+	b1 := createBookTx(t)
+	_, err := tRepo.BookRepo.Get(b1.ID)
+	require.NoError(t, err)
+
+	// by, _ := json.MarshalIndent(b2, "", "\t")
+	// fmt.Println(string(by))
+}
+
+func TestListByCategory(t *testing.T) {
+	b1 := createBookTx(t)
+	require.True(t, len(b1.Categories) > 0)
+	c1 := b1.Categories[0]
+	require.NotEmpty(t, c1)
+	require.True(t, c1.ID > 0)
+	list, err := tRepo.BookRepo.ListByCategory(c1.ID)
+	require.NoError(t, err)
+	require.NotEmpty(t, list)
+
+	by, err := json.MarshalIndent(list, "", "\t")
+	require.NoError(t, err)
+
+	fmt.Println(string(by))
+}

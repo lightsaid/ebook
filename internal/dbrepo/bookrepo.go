@@ -3,6 +3,7 @@ package dbrepo
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"log"
 
@@ -111,9 +112,73 @@ func (r *bookRepo) CreateTx(book *models.Book) (uint64, error) {
 }
 
 func (r *bookRepo) Get(id uint64) (book *models.Book, err error) {
-	sql := "select * from books where id=? and deleted_at is null;"
+	// NOTE: 使用 group_concat 默认长度是1024个字符
+	// 临时增加 GROUP_CONCAT
+	// SET SESSION group_concat_max_len = 8192;
+
+	// NOTE: GROUP_CONCAT 的对齐问题
+	// 比如下面的 category_ids 可能有3个，但是 category_icons 只有2个，就会空值错位了
+	sql := `
+	select 
+		b.*, 
+		a.id as "author.id",
+		a.author_name as "author.author_name", 
+		p.id as "publisher.id",
+		p.publisher_name as "publisher.publisher_name",
+		-- group_concat(distinct c.id) as category_ids,
+		-- group_concat(distinct c.category_name) as category_names,
+		-- group_concat(distinct c.sort) as category_sorts,
+		-- group_concat(distinct c.icon) as category_icons
+
+		-- 拼接为JSON字符串,就不存在错位问题
+		-- json字段命名需要安装Category tag命名，方便使用json.Unmarshal转换
+		group_concat(
+		  json_object( 
+		    'id', c.id,
+		    'categoryName', c.category_name,
+		    'icon', IFNULL(c.icon, ''),
+		    'sort', IFNULL(c.sort, 0)
+		  )
+		) as category_json
+	from books b
+	left join author a on a.id=b.author_id
+	left join publisher p on p.id=b.publisher_id
+	left join book_categories bc ON b.id = bc.book_id
+	left join category c ON bc.category_id = c.id
+	where b.id=? and b.deleted_at is null
+	
+	-- 使用了group_concat，避免查询出错，指定分组
+	group by b.id;
+	`
 	book = new(models.Book)
-	err = r.DB.Get(book, sql, id)
+	queryBook := new(models.SQLQueryBoook)
+
+	// TODO: 138 换成 id
+	err = r.DB.Get(queryBook, sql, 138)
+	if err != nil {
+		return book, err
+	}
+
+	// TODO: 把SQLQueryBoook数据同步book上
+	var categories []*models.Category
+	err = json.Unmarshal([]byte("["+queryBook.CategoryJSON+"]"), &categories)
+	if err != nil {
+		log.Println("bookRepo.Get json.Unmarshal faile ", err)
+	}
+
+	book = &queryBook.Book
+	book.Categories = categories
+
+	// by, _ := json.MarshalIndent(book, "", "\t")
+	// fmt.Println(string(by))
+
+	// Get 方法，查询到数据，都是零值问题说明，err 也会说明是那个字段没法映射
+	/*
+		Get() 只取第一行。
+		如果 SQL 结果为空，sqlx.Get() 会返回 sql.ErrNoRows。
+		如果列名不匹配，不会报错，只是结构体字段保持零值。
+	*/
+
 	return book, err
 }
 
@@ -191,7 +256,21 @@ func (r *bookRepo) UpdateTx(book *models.Book) error {
 }
 
 func (r *bookRepo) List(limit, offset int) ([]*models.Book, error) {
-	sql := `select * from books where deleted_at is null order by id desc limit ? offset ?`
+	/* NOTE: sqlx 查询嵌套结构体字段语法
+	author_name as "author.author_name",
+	publisher_name as "publisher.publisher_name"
+	*/
+	sql := `
+	select 
+		b.*, 
+		a.id as "author.id",
+		author_name as "author.author_name", 
+		p.id as "publisher.id",
+		publisher_name as "publisher.publisher_name" 
+	from books b
+	left join author a on a.id=b.author_id
+	left join publisher p on p.id=b.publisher_id
+	where b.deleted_at is null order by b.id desc limit ? offset ?`
 	ctx, cancel := makeCtx()
 	defer cancel()
 	list := make([]*models.Book, 0, limit)

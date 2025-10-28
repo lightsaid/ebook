@@ -3,6 +3,7 @@ package dbrepo
 import (
 	"database/sql"
 	"errors"
+	"log"
 )
 
 var (
@@ -30,15 +31,23 @@ func updateErrorHandler(result sql.Result, err error) error {
 	if err != nil {
 		return err
 	}
-	eff, err := result.RowsAffected()
+
+	_, err = result.RowsAffected()
 	if err != nil {
+		log.Println("updateErrorHandler RowsAffected fail: ", err)
 		return err
 	}
-
-	// NOTE: 如果数据存在，但是并没有改变任何值，result.RowsAffected()也是会返回0的
-	// 通常在更新之前都会先查询一遍，因此这里可以允许为0
-	if eff <= 0 {
-		return sql.ErrNoRows
-	}
 	return nil
+
+	// eff, err := result.RowsAffected()
+	// if err != nil {
+	// 	return err
+	// }
+
+	// // NOTE: 如果数据存在，但是并没有改变任何值，result.RowsAffected()也是会返回0的
+	// // 通常在更新之前都会先查询一遍，因此这里可以允许为0
+	// if eff <= 0 {
+	// 	return sql.ErrNoRows
+	// }
+	// return nil
 }

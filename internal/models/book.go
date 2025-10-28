@@ -31,6 +31,11 @@ type Book struct {
 	Categories []*Category `json:"categories"`
 }
 
+type SQLQueryBoook struct {
+	Book
+	CategoryJSON string `db:"category_json"`
+}
+
 func ValidateBook(v *validator.Validator, book *Book) {
 	v.Check(validator.IsISBN(book.ISBN), "isbn", "请输入合法的ISBN")
 	v.Check(book.Title != "", "title", "title 不能为空")
