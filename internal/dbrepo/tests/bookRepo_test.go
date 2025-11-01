@@ -184,3 +184,16 @@ func TestListByCategory(t *testing.T) {
 
 	fmt.Println(string(by))
 }
+
+func TestListWithCategory(t *testing.T) {
+	// TODO:
+	b1 := createBookTx(t)
+	require.True(t, len(b1.Categories) > 0)
+	c1 := b1.Categories[0]
+	require.NotEmpty(t, c1)
+	require.True(t, c1.ID > 0)
+	list, err := tRepo.BookRepo.ListWithCategory(2, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, list)
+	require.True(t, len(list) > 0)
+}

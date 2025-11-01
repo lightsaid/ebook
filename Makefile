@@ -1,11 +1,10 @@
-# SQL 迁移文件
+# SQL数据迁移
+
+## SQL 迁移文件
 MIGRATE_SQL=./migrations
 
-# MySQL链接
+## MySQL链接
 DB_SOURCE=mysql://root:root.cc@tcp(localhost:3306)/db_ebook
-
-seed:
-	go run ./cmd/seed/*.go
 
 ## migrate/new name=$1: 创建迁移SQL文件，如 make migrate/new name=create_user_table
 migrate/new:
@@ -32,3 +31,22 @@ migrate/force:
 	migrate -path=${MIGRATE_SQL} -database="${DB_SOURCE}" -verbose force ${version}
 
 .PHONY: migrate/new migrate/up migrate/down migrate/up1 migrate/down1 migrate/force
+
+
+# Tests
+
+## dbrepo 包测试覆盖率
+test/cover:
+	go test -cover -coverpkg=./internal/dbrepo/... ./internal/dbrepo/tests/... -coverprofile=coverage.out
+
+## 查看测试报告
+test/see:
+	go tool cover -html=coverage.out
+
+.PHONY: test/cover test/see
+
+# 随机生成种子数据
+
+## 种子数据
+seed:
+	go run ./cmd/seed/*.go

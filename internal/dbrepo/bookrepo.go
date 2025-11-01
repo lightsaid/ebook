@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 
 	"github.com/jmoiron/sqlx"
@@ -19,6 +20,7 @@ type BookRepo interface {
 	UpdateTx(book *models.Book) error // 更新图书和与之关联的分类、出版社、作者
 	List(limit, offset int) ([]*models.Book, error)
 	ListByCategory(categoryID uint64) ([]*models.Book, error)
+	ListWithCategory(limit, offset int) (list []*models.Book, err error)
 	Delete(id uint64) error
 }
 
@@ -151,15 +153,16 @@ func (r *bookRepo) Get(id uint64) (book *models.Book, err error) {
 	group by b.id;
 	`
 	book = new(models.Book)
-	queryBook := new(models.SQLQueryBoook)
+	queryBook := new(models.SQLBoook)
 
 	// TODO: 138 换成 id
-	err = r.DB.Get(queryBook, sql, 138)
+	err = r.DB.Get(queryBook, sql, id)
 	if err != nil {
+		log.Println("r.DB.Get fail ", err)
 		return book, err
 	}
 
-	// TODO: 把SQLQueryBoook数据同步book上
+	// TODO: 把SQLBoook数据同步book上
 	var categories []*models.Category
 	err = json.Unmarshal([]byte("["+queryBook.CategoryJSON+"]"), &categories)
 	if err != nil {
@@ -278,9 +281,16 @@ func (r *bookRepo) List(limit, offset int) ([]*models.Book, error) {
 	return list, err
 }
 
+// ListByCategory 根据分类查询图书
 func (r *bookRepo) ListByCategory(categoryID uint64) (list []*models.Book, err error) {
 	sql := `
-		select b.*, author_name, publisher_name from books b 
+		select 
+			b.*, 
+			a.id as "author.id",
+			author_name as "author.author_name", 
+			p.id as "publisher.id",
+			publisher_name as "publisher.publisher_name"
+		from books b 
 		left join book_categories bc on b.id = bc.book_id
 		left join category c on c.id = bc.category_id
 		left join author a on a.id = b.author_id
@@ -289,6 +299,81 @@ func (r *bookRepo) ListByCategory(categoryID uint64) (list []*models.Book, err e
 	list = make([]*models.Book, 0, 10)
 	err = r.DB.Select(&list, sql, categoryID)
 	return list, err
+}
+
+// ListWithCategory 查询图书列表和分类
+func (r *bookRepo) ListWithCategory(limit, offset int) (list []*models.Book, err error) {
+	list, err = r.List(limit, offset)
+	if err != nil {
+		return list, err
+	}
+
+	var bookIDs []uint64
+	for _, x := range list {
+		bookIDs = append(bookIDs, x.ID)
+	}
+
+	if len(bookIDs) <= 0 {
+		return list, nil
+	}
+
+	sql, arg, err := sqlx.In(
+		`select 
+				c.id as "category.id",
+				c.category_name as "category.category_name",
+				c.icon as "category.icon",
+				c.sort as "category.sort",
+				c.created_at as "category.created_at",
+				c.updated_at as "category.updated_at",
+			 	bc.book_id AS "book_category.book_id",
+    		bc.category_id AS "book_category.category_id"
+			from category as c 
+			left join book_categories bc on c.id = bc.category_id
+			where bc.book_id in (?);
+		`,
+		bookIDs,
+	)
+	if err != nil {
+		return list, err
+	}
+
+	var cc []models.SQLBookCategory
+
+	sql = r.DB.Rebind(sql)
+
+	fmt.Println("## sql ", sql)
+
+	err = r.DB.Select(&cc, sql, arg...)
+	if err != nil {
+		return list, err
+	}
+
+	// 组合数据
+
+	// 方式1:
+	for i := range list {
+		for _, x := range cc {
+			if list[i].ID == x.BookCategory.BookID {
+				list[i].Categories = append(list[i].Categories, &x.Category)
+			}
+		}
+	}
+
+	// 方式2:
+	// bookMap := make(map[uint64]*models.Book)
+	// // 图书list转map
+	// for i := range list {
+	// 	bookMap[list[i].ID] = list[i]
+	// }
+	// // 查找对应关系
+	// for _, bc := range cc {
+	// 	book := bookMap[bc.BookCategory.BookID]
+	// 	if book != nil {
+	// 		book.Categories = append(book.Categories, &bc.Category)
+	// 	}
+	// }
+
+	return list, nil
 }
 
 func (r *bookRepo) Delete(id uint64) error {

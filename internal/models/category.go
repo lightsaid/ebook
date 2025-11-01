@@ -11,3 +11,9 @@ type Category struct {
 	UpdatedAt    time.Time  `db:"updated_at" json:"UpdatedAt"`
 	DeletedAt    *time.Time `db:"deleted_at" json:"-"`
 }
+
+// SQLBookCategory 方便查询映射
+type SQLBookCategory struct {
+	Category     Category     `db:"category"`
+	BookCategory BookCategory `db:"book_category"`
+}

@@ -31,8 +31,9 @@ type Book struct {
 	Categories []*Category `json:"categories"`
 }
 
-type SQLQueryBoook struct {
+type SQLBoook struct {
 	Book
+	// 查询一本图书对应所有分类的sql字段映射
 	CategoryJSON string `db:"category_json"`
 }
 
