@@ -20,8 +20,8 @@ func createPublisher(t *testing.T) *models.Publisher {
 	require.NotEmpty(t, p1)
 	require.Equal(t, id, p1.ID)
 	require.Equal(t, p1.PublisherName, name)
-	require.WithinDuration(t, time.Now(), p1.CreatedAt, time.Second)
-	require.WithinDuration(t, time.Now(), p1.UpdatedAt, time.Second)
+	require.WithinDuration(t, time.Now(), p1.CreatedAt.Time, time.Second)
+	require.WithinDuration(t, time.Now(), p1.UpdatedAt.Time, time.Second)
 
 	return p1
 }

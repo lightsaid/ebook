@@ -18,8 +18,8 @@ func createAuthor(t *testing.T) *models.Author {
 	author, err := tRepo.AuthorRepo.Get(newID)
 	require.NoError(t, err)
 	require.Equal(t, name, author.AuthorName)
-	require.WithinDuration(t, author.CreatedAt, time.Now(), time.Second*2)
-	require.WithinDuration(t, author.UpdatedAt, time.Now(), time.Second*2)
+	require.WithinDuration(t, author.CreatedAt.Time, time.Now(), time.Second*2)
+	require.WithinDuration(t, author.UpdatedAt.Time, time.Now(), time.Second*2)
 
 	return author
 }
@@ -38,5 +38,5 @@ func TestUpdateAuthor(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, a.ID, a2.ID)
 	require.Equal(t, newName, a2.AuthorName)
-	require.WithinDuration(t, a2.UpdatedAt, time.Now(), time.Second)
+	require.WithinDuration(t, a2.UpdatedAt.Time, time.Now(), time.Second)
 }

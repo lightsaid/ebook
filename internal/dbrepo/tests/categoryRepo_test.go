@@ -26,8 +26,8 @@ func createCategory(t *testing.T) *models.Category {
 	require.Equal(t, c.CategoryName, c2.CategoryName)
 	require.Equal(t, c.Icon, c2.Icon)
 	require.Equal(t, c.Sort, c2.Sort)
-	require.WithinDuration(t, time.Now(), c2.CreatedAt, time.Second)
-	require.WithinDuration(t, time.Now(), c2.UpdatedAt, time.Second)
+	require.WithinDuration(t, time.Now(), c2.CreatedAt.Time, time.Second)
+	require.WithinDuration(t, time.Now(), c2.UpdatedAt.Time, time.Second)
 
 	return c2
 }
