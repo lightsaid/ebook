@@ -50,3 +50,6 @@ test/see:
 ## 种子数据
 seed:
 	go run ./cmd/seed/*.go
+
+api:
+	go run ./cmd/api/*.go
