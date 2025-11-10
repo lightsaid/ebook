@@ -15,7 +15,7 @@ type Book struct {
 	AuthorID    uint64       `db:"author_id" json:"authorId"`
 	CoverUrl    string       `db:"cover_url" json:"coverUrl"`
 	PublisherID uint64       `db:"publisher_id" json:"publisherId"`
-	Pubdate     time.Time    `db:"pubdate" json:"pubdate"`
+	Pubdate     types.GxTime `db:"pubdate" json:"pubdate"`
 	Price       uint         `db:"price" json:"price"`
 	Status      int          `db:"status" json:"status"`
 	Type        int          `db:"type" json:"type"`

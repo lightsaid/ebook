@@ -1,34 +1,35 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
-	"net/http"
+	"log/slog"
+	"os"
 
-	"github.com/go-chi/chi/v5"
+	"github.com/lightsaid/ebook/internal/dbrepo"
+	"github.com/lightsaid/ebook/pkg/logger"
 )
 
 type Application struct {
+	Db dbrepo.Repository
 }
 
 type envelope map[string]any
 
 func main() {
-	router := chi.NewRouter()
-	router.Get("/healthcheck", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(envelope{"status": "ok"})
-	})
+	app := Application{}
 
-	mux := chi.NewRouter()
-	mux.Mount("/v1", router)
+	instance := logger.NewLogger(os.Stdout, "DEBUG", logger.TextStyle)
+	slog.SetDefault(instance)
 
-	srv := http.Server{
-		Addr:    "0.0.0.0:6000",
-		Handler: mux,
-	}
-	log.Println("start api server on ", srv.Addr)
-	err := srv.ListenAndServe()
+	conn, err := dbrepo.Open()
 	if err != nil {
+		panic(err)
+	}
+
+	app.Db = dbrepo.NewRepository(conn)
+
+	if err := app.serve(instance); err != nil {
 		log.Fatalln(err)
 	}
+
 }
