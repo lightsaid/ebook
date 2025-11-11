@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/lightsaid/ebook/internal/models"
+	"github.com/lightsaid/ebook/internal/types"
 	"github.com/lightsaid/ebook/pkg/random"
 	"github.com/stretchr/testify/require"
 )
@@ -26,7 +27,7 @@ func makeEmptyIDBook(t *testing.T) *models.Book {
 		AuthorID:    c.ID,
 		CoverUrl:    random.RandomString(32),
 		PublisherID: p.ID,
-		Pubdate:     time.Now(),
+		Pubdate:     types.GxTime{Time: time.Now()},
 		Price:       uint(random.RandomInt(100, 300)),
 		Status:      status,
 		Type:        random.RandomInt(1, 3),

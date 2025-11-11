@@ -31,13 +31,9 @@ func (log *Logger) Handle(ctx context.Context, r slog.Record) error {
 		r.AddAttrs(slog.String("request_id", requestID))
 	}
 
-	// fields := make(map[string]interface{}, r.NumAttrs())
-	// fmt.Println(">>> ", r.NumAttrs())
-	// r.Attrs(func(a slog.Attr) bool {
-	// 	fields[a.Key] = a.Value.Any()
-	// 	fmt.Println("=>>>>", a.Value)
-	// 	return true
-	// })
+	// if r.Level == slog.LevelInfo {
+	// // 做些什么
+	// }
 
 	return log.Handler.Handle(ctx, r)
 }
@@ -52,9 +48,11 @@ func NewLogger(output io.Writer, level string, logStyle LogStyle) *slog.Logger {
 		AddSource: true,
 		Level:     logLevel,
 		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
-			if a.Key == slog.LevelKey {
 
-			}
+			// if a.Key == slog.LevelKey {
+			// 	// 会被转义，无效果
+			// 	a.Value = slog.StringValue(fmt.Sprintf("\033[31m%s\033[0m", a.Value))
+			// }
 
 			// 取相对路径，输出更简短的路径
 			if a.Key == slog.SourceKey {
