@@ -73,7 +73,7 @@ func TestUpdateBook(t *testing.T) {
 	b1.AuthorID = c1.ID
 	b1.CoverUrl = random.RandomString(32)
 	b1.PublisherID = p1.ID
-	b1.Pubdate = time.Now()
+	b1.Pubdate = types.GxTime{Time: time.Now()}
 	b1.Price = uint(random.RandomInt(100, 300))
 	b1.Status = status
 	b1.Type = random.RandomInt(1, 3)

@@ -1,6 +1,8 @@
 package validator
 
-import "regexp"
+import (
+	"regexp"
+)
 
 // 定义业务字段验证
 
@@ -15,4 +17,17 @@ func IsISBN(isbn string) bool {
 		return true
 	}
 	return false
+}
+
+// Verifiyer定义一个Verifiy校验接口方法，
+// 配合DoVerifiy使用可以省去validator.New(),Valid()步骤
+type Verifiyer interface {
+	Verifiy(*Validator)
+}
+
+// DoVerifiy 执行实现Verifiyer接口对象，并返回*Validator
+func DoVerifiy(obj Verifiyer) (*Validator, bool) {
+	v := New()
+	obj.Verifiy(v)
+	return v, v.Valid()
 }

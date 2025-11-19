@@ -1,9 +1,11 @@
 package models
 
 import (
+	"strings"
 	"time"
 
 	"github.com/lightsaid/ebook/internal/types"
+	"github.com/lightsaid/gotk"
 )
 
 type Category struct {
@@ -14,6 +16,12 @@ type Category struct {
 	CreatedAt    types.GxTime `db:"created_at" json:"createdAt"`
 	UpdatedAt    types.GxTime `db:"updated_at" json:"UpdatedAt"`
 	DeletedAt    *time.Time   `db:"deleted_at" json:"-"`
+}
+
+// Verifiy 实现validator.Verifiyer校验接口
+func (c Category) Verifiy(v *gotk.Validator) {
+	c.CategoryName = strings.Trim(c.CategoryName, "")
+	v.Check(len(c.CategoryName) > 0, "categoryName", "分类名称不能为空")
 }
 
 // SQLBookCategory 方便查询映射

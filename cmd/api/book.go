@@ -12,8 +12,9 @@ func (app *Application) PostBookHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func (app *Application) GetBookHandler(w http.ResponseWriter, r *http.Request) {
-	id, err := app.readIDParam(r, "id")
+	id, err := app.readIntParam(r, "id")
 	if err != nil {
+		app.FAIL(w, r, err)
 		return
 	}
 

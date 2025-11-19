@@ -15,6 +15,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/lightsaid/ebook/internal/dbrepo"
+	"github.com/lightsaid/gotk"
 )
 
 func (app *Application) routes() http.Handler {
@@ -67,7 +68,7 @@ func (app *Application) routes() http.Handler {
 	mux := chi.NewRouter()
 	mux.Mount("/api", router)
 
-	return mux
+	return gotk.SetRequestIDCtx(mux)
 	// 超时控制
 	//	return http.TimeoutHandler(mux, 5*time.Second, "请求超时")
 }

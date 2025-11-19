@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -61,9 +63,15 @@ func NewLogger(output io.Writer, level string, logStyle LogStyle) *slog.Logger {
 				if !ok || ss.File == "" {
 					return a
 				}
-				var sep = "ebook/"
-				relativePath := sep + strings.Split(ss.File, sep)[1]
-				a.Value = slog.StringValue(fmt.Sprintf("%s %d", relativePath, ss.Line))
+				dir, _ := os.Getwd()
+				var sep = filepath.Base(dir) + "/"
+				var parts = strings.Split(ss.File, sep)
+				if len(parts) > 1 {
+					dir, _ := os.Getwd()
+					filepath.Base(dir)
+					relativePath := sep + parts[1]
+					a.Value = slog.StringValue(fmt.Sprintf("%s %d", relativePath, ss.Line))
+				}
 			}
 
 			if a.Key == slog.TimeKey {
