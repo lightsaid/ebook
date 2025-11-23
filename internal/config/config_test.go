@@ -13,7 +13,7 @@ type TestConfig struct {
 	Port int
 	Foo  bool `env:"FOO"`
 	Cat  Cat
-	// Dog  *Dog   // TODO: 指针类型
+	Dog  *Dog // TODO: 指针类型
 }
 
 type Cat struct {
@@ -26,6 +26,7 @@ type Dog struct {
 
 func TestLoadConfig(t *testing.T) {
 	conf := new(TestConfig)
+	// conf.Dog = new(Dog)
 	err := Load(conf, "./test.env")
 	require.NoError(t, err)
 	by, _ := json.MarshalIndent(conf, "", "\t")
