@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -21,8 +22,9 @@ func main() {
 	repo = dbrepo.NewRepository(db)
 	id := createAuthor()
 	getAuthor(id)
-
-	list, err := repo.AuthorRepo.List()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	list, err := repo.AuthorRepo.List(ctx, dbrepo.Filters{})
 	if err != nil {
 		log.Println("repo.AuthorRepo.List error: ", err)
 	}
@@ -31,9 +33,12 @@ func main() {
 }
 
 func createAuthor() uint64 {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
 	src := rand.NewSource(time.Now().UnixMicro())
+
 	randNumber := rand.New(src).Intn(2000)
-	id, err := repo.AuthorRepo.Create(fmt.Sprintf("法外狂徒张三-%d", randNumber))
+	id, err := repo.AuthorRepo.Create(ctx, fmt.Sprintf("法外狂徒张三-%d", randNumber))
 	if err != nil {
 		log.Println("createAuthor: ", err)
 	}
@@ -42,7 +47,10 @@ func createAuthor() uint64 {
 }
 
 func getAuthor(id uint64) {
-	author, err := repo.AuthorRepo.Get(id)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	author, err := repo.AuthorRepo.Get(ctx, id)
 	if err != nil {
 		log.Println("getAuthor error: ", err)
 	}

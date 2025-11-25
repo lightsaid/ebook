@@ -7,6 +7,7 @@ import (
 
 	"github.com/lightsaid/ebook/internal/dbrepo"
 	"github.com/lightsaid/ebook/pkg/logger"
+	"github.com/lightsaid/gotk"
 )
 
 type Application struct {
@@ -18,7 +19,7 @@ type envelope map[string]any
 func main() {
 	app := Application{}
 
-	instance := logger.NewLogger(os.Stdout, "DEBUG", logger.TextStyle)
+	instance := logger.NewLogger(os.Stdout, "DEBUG", gotk.TextType)
 	slog.SetDefault(instance)
 
 	conn, err := dbrepo.Open()

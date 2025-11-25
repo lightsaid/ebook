@@ -5,23 +5,22 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
-	"log"
+	"log/slog"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/lightsaid/ebook/internal/models"
 )
 
 type BookRepo interface {
-	Create(book *models.Book) (uint64, error)
-	CreateTx(book *models.Book) (uint64, error)
-	Get(id uint64) (*models.Book, error)
-	Update(book *models.Book) error   // 仅更新books表
-	UpdateTx(book *models.Book) error // 更新图书和与之关联的分类、出版社、作者
-	List(limit, offset int) ([]*models.Book, error)
-	ListByCategory(categoryID uint64) ([]*models.Book, error)
-	ListWithCategory(limit, offset int) (list []*models.Book, err error)
-	Delete(id uint64) error
+	Create(ctx context.Context, book *models.Book) (uint64, error)
+	CreateTx(ctx context.Context, book *models.Book) (uint64, error)
+	Get(ctx context.Context, id uint64) (*models.Book, error)
+	Update(ctx context.Context, book *models.Book) error   // 仅更新books表
+	UpdateTx(ctx context.Context, book *models.Book) error // 更新图书和与之关联的分类、出版社、作者
+	List(context.Context, Filters) ([]*models.Book, error)
+	ListByCategory(ctx context.Context, categoryID uint64) ([]*models.Book, error)
+	ListWithCategory(ctx context.Context, filter Filters) (list []*models.Book, err error)
+	Delete(ctx context.Context, id uint64) error
 }
 
 var _ BookRepo = (*bookRepo)(nil)
@@ -61,7 +60,7 @@ func bookFieldToSQLArgs(book *models.Book) map[string]any {
 	return args
 }
 
-func (r *bookRepo) Create(book *models.Book) (uint64, error) {
+func (r *bookRepo) Create(ctx context.Context, book *models.Book) (uint64, error) {
 	sql := `
 	insert into books set 
 		isbn=:isbn, 
@@ -81,24 +80,28 @@ func (r *bookRepo) Create(book *models.Book) (uint64, error) {
 
 	ctx, cancel := makeCtx()
 	defer cancel()
+
 	args := bookFieldToSQLArgs(book)
+
+	slog.InfoContext(ctx, spaceRex.ReplaceAllString(sql, " "), "args", slog.AnyValue(args))
+
 	result, err := r.DB.NamedExecContext(ctx, sql, args)
 	return insertErrorHandler(result, err)
 }
 
-func (r *bookRepo) CreateTx(book *models.Book) (uint64, error) {
-	ctx, cancel := makeCtx()
+func (r *bookRepo) CreateTx(ctx context.Context, book *models.Book) (uint64, error) {
+	ctx, cancel := timeoutCtx(ctx)
 	defer cancel()
 
 	// 不存在分类
 	if book.Categories != nil && len(book.Categories) == 0 {
-		return r.Create(book)
+		return r.Create(ctx, book)
 	}
 	var bookID uint64
 	// 存在分类
 	err := execTx(ctx, r.DB, func(r Repository) error {
 		var err error
-		bookID, err = r.BookRepo.Create(book)
+		bookID, err = r.BookRepo.Create(ctx, book)
 		if err != nil {
 			return err
 		}
@@ -107,13 +110,13 @@ func (r *bookRepo) CreateTx(book *models.Book) (uint64, error) {
 			list = append(list, models.BookCategory{BookID: bookID, CategoryID: x.ID})
 		}
 
-		return r.BookCategoryRepo.BatchInsert(list)
+		return r.BookCategoryRepo.BatchInsert(ctx, list)
 	})
 
 	return bookID, err
 }
 
-func (r *bookRepo) Get(id uint64) (book *models.Book, err error) {
+func (r *bookRepo) Get(ctx context.Context, id uint64) (book *models.Book, err error) {
 	// NOTE: 使用 group_concat 默认长度是1024个字符
 	// 临时增加 GROUP_CONCAT
 	// SET SESSION group_concat_max_len = 8192;
@@ -155,18 +158,23 @@ func (r *bookRepo) Get(id uint64) (book *models.Book, err error) {
 	book = new(models.Book)
 	queryBook := new(models.SQLBoook)
 
-	// TODO: 138 换成 id
-	err = r.DB.Get(queryBook, sql, id)
+	ctx, cancel := timeoutCtx(ctx)
+	defer cancel()
+
+	slog.InfoContext(ctx, sql, "id", slog.Int64Value(int64(id)))
+
+	err = r.DB.GetContext(ctx, queryBook, sql, id)
 	if err != nil {
-		log.Println("r.DB.Get fail ", err)
+		slog.ErrorContext(ctx, "r.DB.Get fail ", slog.String("err", err.Error()))
 		return book, err
 	}
 
-	// TODO: 把SQLBoook数据同步book上
+	// 把SQLBoook数据同步book上
 	var categories []*models.Category
 	err = json.Unmarshal([]byte("["+queryBook.CategoryJSON+"]"), &categories)
 	if err != nil {
-		log.Println("bookRepo.Get json.Unmarshal faile ", err)
+		slog.ErrorContext(ctx, "bookRepo.Get json.Unmarshal faile ", slog.String("err", err.Error()))
+		return book, err
 	}
 
 	book = &queryBook.Book
@@ -185,7 +193,7 @@ func (r *bookRepo) Get(id uint64) (book *models.Book, err error) {
 	return book, err
 }
 
-func (r *bookRepo) Update(book *models.Book) error {
+func (r *bookRepo) Update(ctx context.Context, book *models.Book) error {
 	sql := `
 	update books set 
 		isbn=:isbn, 
@@ -203,7 +211,7 @@ func (r *bookRepo) Update(book *models.Book) error {
 		description=:description
 	where id=:id and deleted_at is null;
 	`
-	ctx, cancel := makeCtx()
+	ctx, cancel := timeoutCtx(ctx)
 	defer cancel()
 	args := bookFieldToSQLArgs(book)
 
@@ -211,34 +219,40 @@ func (r *bookRepo) Update(book *models.Book) error {
 	// return updateErrorHandler(r.DB.NamedExecContext(ctx, query, args))
 
 	// NOTE: 方式2: 方便查看sql和参数，便于日志输出
-	query, argv, err := sqlx.Named(sql, args)
+	// query, argv, err := sqlx.Named(sql, args)
+	// if err != nil {
+	// 	log.Println("bookRepo.Update sqlx.Named falil ", err)
+	// 	return err
+	// }
+
+	// query = r.DB.Rebind(query)
+
+	query, argv, err := debugSQL(ctx, r.DB, sql, args)
 	if err != nil {
-		log.Println("bookRepo.Update sqlx.Named falil ", err)
+		slog.ErrorContext(ctx, "bookRepo.Update sqlx.Named falil ", slog.String("err", err.Error()))
 		return err
 	}
-
-	log.Println("query ", query)
-	log.Println("argv  ", argv)
-
-	query = r.DB.Rebind(query)
 
 	return updateErrorHandler(r.DB.ExecContext(ctx, query, argv...))
 }
 
 // UpdateTx 通过事务更新图书，同时更新bookCategory表
-func (r *bookRepo) UpdateTx(book *models.Book) error {
+func (r *bookRepo) UpdateTx(ctx context.Context, book *models.Book) error {
+	ctx, cancel := timeoutCtx(ctx)
+	defer cancel()
+
 	err := execTx(context.Background(), r.DB, func(r Repository) error {
 		// 更新图书
-		err := r.BookRepo.Update(book)
+		err := r.BookRepo.Update(ctx, book)
 		if err != nil {
-			log.Println("[UpdateTx]->[r.BookRepo.Update] fail: ", err)
+			slog.ErrorContext(ctx, "[UpdateTx]->[r.BookRepo.Update] fail: ", slog.String("err", err.Error()))
 			return err
 		}
 
 		// 删除图书和分类关系（book_categories）
-		err = r.BookCategoryRepo.DeleteByBookID(book.ID)
+		err = r.BookCategoryRepo.DeleteByBookID(ctx, book.ID)
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
-			log.Println("[UpdateTx]->[r.BookCategoryRepo.DeleteByBookID] fail: ", err)
+			slog.ErrorContext(ctx, "[UpdateTx]->[r.BookCategoryRepo.DeleteByBookID] fail: ", slog.String("err", err.Error()))
 			return err
 		}
 
@@ -253,17 +267,17 @@ func (r *bookRepo) UpdateTx(book *models.Book) error {
 		}
 
 		// 添加新的对应关系
-		return r.BookCategoryRepo.BatchInsert(list)
+		return r.BookCategoryRepo.BatchInsert(ctx, list)
 	})
 	return err
 }
 
-func (r *bookRepo) List(limit, offset int) ([]*models.Book, error) {
+func (r *bookRepo) List(ctx context.Context, filter Filters) ([]*models.Book, error) {
 	/* NOTE: sqlx 查询嵌套结构体字段语法
 	author_name as "author.author_name",
 	publisher_name as "publisher.publisher_name"
 	*/
-	sql := `
+	sql := r.DB.Rebind(`
 	select 
 		b.*, 
 		a.id as "author.id",
@@ -273,16 +287,25 @@ func (r *bookRepo) List(limit, offset int) ([]*models.Book, error) {
 	from books b
 	left join author a on a.id=b.author_id
 	left join publisher p on p.id=b.publisher_id
-	where b.deleted_at is null order by b.id desc limit ? offset ?`
-	ctx, cancel := makeCtx()
+	where b.deleted_at is null order by b.id desc limit ? offset ?`)
+	ctx, cancel := timeoutCtx(ctx)
 	defer cancel()
-	list := make([]*models.Book, 0, limit)
-	err := r.DB.SelectContext(ctx, &list, sql, limit, offset)
+
+	list := make([]*models.Book, 0, filter.limit())
+
+	// TODO: 返回 PageQueryVo 结构类型数据
+
+	slog.InfoContext(
+		ctx, spaceRex.ReplaceAllString(sql, " "),
+		"limit", slog.IntValue(filter.limit()),
+		"offset", slog.IntValue(filter.offset()))
+
+	err := r.DB.SelectContext(ctx, &list, sql, filter.limit(), filter.offset())
 	return list, err
 }
 
-// ListByCategory 根据分类查询图书
-func (r *bookRepo) ListByCategory(categoryID uint64) (list []*models.Book, err error) {
+// ListByCategory 根据分类查询图书 TODO: 分页
+func (r *bookRepo) ListByCategory(ctx context.Context, categoryID uint64) (list []*models.Book, err error) {
 	sql := `
 		select 
 			b.*, 
@@ -297,13 +320,20 @@ func (r *bookRepo) ListByCategory(categoryID uint64) (list []*models.Book, err e
 		left join publisher p on p.id = b.publisher_id
 		where bc.category_id = ? and b.deleted_at is null;`
 	list = make([]*models.Book, 0, 10)
-	err = r.DB.Select(&list, sql, categoryID)
+
+	ctx, cancel := timeoutCtx(ctx)
+	defer cancel()
+
+	err = r.DB.SelectContext(ctx, &list, sql, categoryID)
 	return list, err
 }
 
 // ListWithCategory 查询图书列表和分类
-func (r *bookRepo) ListWithCategory(limit, offset int) (list []*models.Book, err error) {
-	list, err = r.List(limit, offset)
+func (r *bookRepo) ListWithCategory(ctx context.Context, filter Filters) (list []*models.Book, err error) {
+	ctx, cancel := timeoutCtx(ctx)
+	defer cancel()
+
+	list, err = r.List(ctx, filter)
 	if err != nil {
 		return list, err
 	}
@@ -341,7 +371,7 @@ func (r *bookRepo) ListWithCategory(limit, offset int) (list []*models.Book, err
 
 	sql = r.DB.Rebind(sql)
 
-	fmt.Println("## sql ", sql)
+	slog.InfoContext(ctx, sql, "args", slog.AnyValue(arg))
 
 	err = r.DB.Select(&cc, sql, arg...)
 	if err != nil {
@@ -376,7 +406,13 @@ func (r *bookRepo) ListWithCategory(limit, offset int) (list []*models.Book, err
 	return list, nil
 }
 
-func (r *bookRepo) Delete(id uint64) error {
+func (r *bookRepo) Delete(ctx context.Context, id uint64) error {
 	sql := `update books set deleted_at=now() where id=?`
-	return updateErrorHandler(r.DB.Exec(sql, id))
+	ctx, cancel := timeoutCtx(ctx)
+	defer cancel()
+
+	query := r.DB.Rebind(sql)
+	slog.DebugContext(ctx, query, slog.Int64("id", int64(id)))
+
+	return updateErrorHandler(r.DB.ExecContext(ctx, query, id))
 }

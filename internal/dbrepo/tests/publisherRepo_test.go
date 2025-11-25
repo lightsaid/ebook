@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -11,11 +12,13 @@ import (
 
 func createPublisher(t *testing.T) *models.Publisher {
 	name := random.RandomString(12)
-	id, err := tRepo.PublisherRepo.Create(name)
+	ctx, cancel := context.WithTimeout(context.TODO(), 5*time.Second)
+	defer cancel()
+	id, err := tRepo.PublisherRepo.Create(ctx, name)
 	require.NoError(t, err)
 	require.True(t, id > 0)
 
-	p1, err := tRepo.PublisherRepo.Get(id)
+	p1, err := tRepo.PublisherRepo.Get(ctx, id)
 	require.NoError(t, err)
 	require.NotEmpty(t, p1)
 	require.Equal(t, id, p1.ID)

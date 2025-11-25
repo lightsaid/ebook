@@ -1,12 +1,14 @@
 package tests
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"testing"
 	"time"
 
+	"github.com/lightsaid/ebook/internal/dbrepo"
 	"github.com/lightsaid/ebook/internal/models"
 	"github.com/lightsaid/ebook/internal/types"
 	"github.com/lightsaid/ebook/pkg/random"
@@ -40,12 +42,15 @@ func makeEmptyIDBook(t *testing.T) *models.Book {
 }
 
 func createBook(t *testing.T) *models.Book {
+	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*5)
+	defer cancel()
+
 	b1 := makeEmptyIDBook(t)
-	id, err := tRepo.BookRepo.Create(b1)
+	id, err := tRepo.BookRepo.Create(ctx, b1)
 	require.NoError(t, err)
 	require.True(t, id > 0)
 
-	b2, err := tRepo.BookRepo.Get(id)
+	b2, err := tRepo.BookRepo.Get(ctx, id)
 	require.NoError(t, err)
 	require.NotEmpty(t, b2)
 	require.True(t, b2.ID > 0)
@@ -82,19 +87,23 @@ func TestUpdateBook(t *testing.T) {
 	b1.Description = random.RandomString(64)
 
 	time.Sleep(time.Second * 2)
+	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*5)
+	defer cancel()
 
-	err := tRepo.BookRepo.Update(b1)
+	err := tRepo.BookRepo.Update(ctx, b1)
 	require.NoError(t, err)
 }
 
 func TestDeleted(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*5)
+	defer cancel()
 	b := createBook(t)
 	require.Empty(t, b.DeletedAt)
 
-	err := tRepo.BookRepo.Delete(b.ID)
+	err := tRepo.BookRepo.Delete(ctx, b.ID)
 	require.NoError(t, err)
 
-	_, err = tRepo.BookRepo.Get(b.ID)
+	_, err = tRepo.BookRepo.Get(ctx, b.ID)
 	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
@@ -104,7 +113,10 @@ func TestListBook(t *testing.T) {
 		_ = createBook(t)
 	}
 
-	list, err := tRepo.BookRepo.List(10, 0)
+	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*5)
+	defer cancel()
+	ff := dbrepo.Filters{PageNum: 1, PageSize: 10}
+	list, err := tRepo.BookRepo.List(ctx, ff)
 	require.NoError(t, err)
 	require.True(t, len(list) == 10)
 
@@ -114,6 +126,8 @@ func TestListBook(t *testing.T) {
 }
 
 func createBookTx(t *testing.T) *models.Book {
+	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*5)
+	defer cancel()
 	b1 := makeEmptyIDBook(t)
 	c1 := createCategory(t)
 	c2 := createCategory(t)
@@ -122,12 +136,12 @@ func createBookTx(t *testing.T) *models.Book {
 	b1.Categories = append(b1.Categories, c1)
 	b1.Categories = append(b1.Categories, c2)
 	b1.Categories = append(b1.Categories, c3)
-	newID, err := tRepo.BookRepo.CreateTx(b1)
+	newID, err := tRepo.BookRepo.CreateTx(ctx, b1)
 
 	require.NoError(t, err)
 	require.True(t, newID > 0)
 
-	b2, err := tRepo.BookRepo.Get(newID)
+	b2, err := tRepo.BookRepo.Get(ctx, newID)
 	require.NoError(t, err)
 	require.NotEmpty(t, b2)
 	require.True(t, b2.ID > 0)
@@ -140,6 +154,8 @@ func TestCreateTx(t *testing.T) {
 }
 
 func TestUpdateTx(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*5)
+	defer cancel()
 	b1 := createBookTx(t)
 
 	c1 := createCategory(t)
@@ -148,7 +164,7 @@ func TestUpdateTx(t *testing.T) {
 	list = append(list, c1)
 	list = append(list, c2)
 
-	b2, err := tRepo.BookRepo.Get(b1.ID)
+	b2, err := tRepo.BookRepo.Get(ctx, b1.ID)
 	require.NoError(t, err)
 
 	b2.Categories = list
@@ -157,13 +173,15 @@ func TestUpdateTx(t *testing.T) {
 	b2.CoverUrl = random.RandomString(20)
 	b2.Price = uint(random.RandomInt(2000, 10000))
 
-	err = tRepo.BookRepo.UpdateTx(b2)
+	err = tRepo.BookRepo.UpdateTx(ctx, b2)
 	require.NoError(t, err)
 }
 
 func TestGetBookByID(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*5)
+	defer cancel()
 	b1 := createBookTx(t)
-	_, err := tRepo.BookRepo.Get(b1.ID)
+	_, err := tRepo.BookRepo.Get(ctx, b1.ID)
 	require.NoError(t, err)
 
 	// by, _ := json.MarshalIndent(b2, "", "\t")
@@ -171,12 +189,14 @@ func TestGetBookByID(t *testing.T) {
 }
 
 func TestListByCategory(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*5)
+	defer cancel()
 	b1 := createBookTx(t)
 	require.True(t, len(b1.Categories) > 0)
 	c1 := b1.Categories[0]
 	require.NotEmpty(t, c1)
 	require.True(t, c1.ID > 0)
-	list, err := tRepo.BookRepo.ListByCategory(c1.ID)
+	list, err := tRepo.BookRepo.ListByCategory(ctx, c1.ID)
 	require.NoError(t, err)
 	require.NotEmpty(t, list)
 
@@ -187,13 +207,16 @@ func TestListByCategory(t *testing.T) {
 }
 
 func TestListWithCategory(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*5)
+	defer cancel()
 	// TODO:
 	b1 := createBookTx(t)
 	require.True(t, len(b1.Categories) > 0)
 	c1 := b1.Categories[0]
 	require.NotEmpty(t, c1)
 	require.True(t, c1.ID > 0)
-	list, err := tRepo.BookRepo.ListWithCategory(2, 0)
+	filter := dbrepo.Filters{PageNum: 1, PageSize: 2}
+	list, err := tRepo.BookRepo.ListWithCategory(ctx, filter)
 	require.NoError(t, err)
 	require.NotEmpty(t, list)
 	require.True(t, len(list) > 0)

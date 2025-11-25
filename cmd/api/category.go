@@ -19,7 +19,7 @@ func (app *Application) PostCategoryHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	// 执行分类创建
-	newID, err := app.Db.CategoryRepo.Create(c)
+	newID, err := app.Db.CategoryRepo.Create(r.Context(), c)
 	if err != nil {
 		// 处理数据库错误
 		a := dbrepo.ConvertToApiError(err)
@@ -39,7 +39,7 @@ func (app *Application) GetCategoryHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	category, err2 := app.Db.CategoryRepo.Get(uint64(id))
+	category, err2 := app.Db.CategoryRepo.Get(r.Context(), id)
 	if err2 != nil {
 		a := dbrepo.ConvertToApiError(err)
 		app.FAIL(w, r, a)
@@ -66,7 +66,7 @@ func (app *Application) PutCategoryHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	// 根据id获取分类
-	category, err := app.Db.CategoryRepo.Get(uint64(id))
+	category, err := app.Db.CategoryRepo.Get(r.Context(), id)
 	if err != nil {
 		aerr := dbrepo.ConvertToApiError(err)
 		app.FAIL(w, r, aerr)
@@ -80,7 +80,8 @@ func (app *Application) PutCategoryHandler(w http.ResponseWriter, r *http.Reques
 		category.Icon = c.Icon
 	}
 
-	err = app.Db.CategoryRepo.Update(*category)
+	// 更新
+	err = app.Db.CategoryRepo.Update(r.Context(), *category)
 	if err != nil {
 		// 处理数据库错误
 		aerr := dbrepo.ConvertToApiError(err)
@@ -100,7 +101,7 @@ func (app *Application) DeleteCategoryHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	// 先获取，在删除
-	_, err := app.Db.CategoryRepo.Get(uint64(id))
+	_, err := app.Db.CategoryRepo.Get(r.Context(), id)
 	if err != nil {
 		aerr = dbrepo.ConvertToApiError(err)
 		app.FAIL(w, r, aerr)
@@ -108,7 +109,7 @@ func (app *Application) DeleteCategoryHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	// 执行删除
-	err = app.Db.CategoryRepo.Delete(uint64(id))
+	err = app.Db.CategoryRepo.Delete(r.Context(), id)
 	if err != nil {
 		aerr = dbrepo.ConvertToApiError(err)
 		app.FAIL(w, r, aerr)
@@ -119,7 +120,7 @@ func (app *Application) DeleteCategoryHandler(w http.ResponseWriter, r *http.Req
 }
 
 func (app *Application) ListCategoryHandler(w http.ResponseWriter, r *http.Request) {
-	list, err := app.Db.CategoryRepo.List()
+	list, err := app.Db.CategoryRepo.List(r.Context())
 	if err != nil {
 		a := dbrepo.ConvertToApiError(err)
 		app.FAIL(w, r, a)

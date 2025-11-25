@@ -1,20 +1,21 @@
 package dbrepo
 
 import (
-	"fmt"
+	"context"
+	"log/slog"
 	"strings"
 
 	"github.com/lightsaid/ebook/internal/models"
 )
 
 type BookCategoryRepo interface {
-	Create(bc models.BookCategory) (uint64, error)
-	ListByBookID(bookID uint64) (list []*models.BookCategory, err error)
-	ListByCategoryID(categoryID uint64) (list []*models.BookCategory, err error)
-	DeleteByBookID(bookID uint64) error
-	DeleteByCategoryID(bookID uint64) error
+	Create(ctx context.Context, bc models.BookCategory) (uint64, error)
+	ListByBookID(ctx context.Context, bookID uint64) (list []*models.BookCategory, err error)
+	ListByCategoryID(ctx context.Context, categoryID uint64) (list []*models.BookCategory, err error)
+	DeleteByBookID(ctx context.Context, bookID uint64) error
+	DeleteByCategoryID(ctx context.Context, bookID uint64) error
 
-	BatchInsert(list []models.BookCategory) error
+	BatchInsert(ctx context.Context, list []models.BookCategory) error
 }
 
 var _ BookCategoryRepo = (*bookCategoryRepo)(nil)
@@ -30,13 +31,24 @@ func NewBookCategoryRepo(db Queryable) *bookCategoryRepo {
 	return repo
 }
 
-func (r *bookCategoryRepo) Create(bc models.BookCategory) (uint64, error) {
-	sql := `insert book_categories set book_id=?, category_id=?;`
-	result, err := r.DB.Exec(sql, bc.BookID, bc.CategoryID)
+func (r *bookCategoryRepo) Create(ctx context.Context, bc models.BookCategory) (uint64, error) {
+	sql := r.DB.Rebind(`insert book_categories set book_id=?, category_id=?`)
+
+	ctx, cancel := timeoutCtx(ctx)
+	defer cancel()
+
+	slog.DebugContext(
+		ctx, sql,
+		"book_id",
+		slog.Int64Value(int64(bc.BookID)),
+		"category_id", slog.Int64Value(int64(bc.CategoryID)),
+	)
+
+	result, err := r.DB.ExecContext(ctx, sql, bc.BookID, bc.CategoryID)
 	return insertErrorHandler(result, err)
 }
 
-func (r *bookCategoryRepo) BatchInsert(list []models.BookCategory) error {
+func (r *bookCategoryRepo) BatchInsert(ctx context.Context, list []models.BookCategory) error {
 	if len(list) <= 0 {
 		return ErrBookCategoryNoRows
 	}
@@ -48,37 +60,64 @@ func (r *bookCategoryRepo) BatchInsert(list []models.BookCategory) error {
 		args = append(args, x.BookID, x.CategoryID)
 	}
 	sql += strings.Join(parts, ",")
-	fmt.Println("BatchInsert: ", sql)
-	ctx, cancel := makeCtx()
+
+	ctx, cancel := timeoutCtx(ctx)
 	defer cancel()
+
+	query := r.DB.Rebind(sql)
+	slog.InfoContext(ctx, spaceRex.ReplaceAllString(query, " "), "args", slog.AnyValue(args))
 
 	// NOTE: 这里只会返回影响行数，因此不能使用 insertErrorHandler
 	// _, err := insertErrorHandler(r.DB.ExecContext(ctx, sql, args...))
 
-	err := updateErrorHandler(r.DB.ExecContext(ctx, sql, args...))
+	err := updateErrorHandler(r.DB.ExecContext(ctx, query, args...))
 	return err
 }
 
-func (r *bookCategoryRepo) ListByBookID(bookID uint64) (list []*models.BookCategory, err error) {
-	sql := `select * from book_categories where book_id=?;`
-	err = r.DB.Select(&list, sql, bookID)
+func (r *bookCategoryRepo) ListByBookID(ctx context.Context, bookID uint64) (list []*models.BookCategory, err error) {
+	sql := r.DB.Rebind(`select * from book_categories where book_id=?`)
+
+	ctx, cancel := timeoutCtx(ctx)
+	defer cancel()
+
+	slog.InfoContext(ctx, sql, "book_id", slog.Int64Value(int64(bookID)))
+
+	err = r.DB.SelectContext(ctx, &list, sql, bookID)
 	return list, err
 }
 
-func (r *bookCategoryRepo) ListByCategoryID(categoryID uint64) (list []*models.BookCategory, err error) {
-	sql := `select * from book_categories where category_id=?;`
-	err = r.DB.Select(&list, sql, categoryID)
+func (r *bookCategoryRepo) ListByCategoryID(ctx context.Context, categoryID uint64) (list []*models.BookCategory, err error) {
+	sql := r.DB.Rebind(`select * from book_categories where category_id=?`)
+
+	ctx, cancel := timeoutCtx(ctx)
+	defer cancel()
+
+	slog.InfoContext(ctx, sql, "category_id", slog.Int64Value(int64(categoryID)))
+
+	err = r.DB.SelectContext(ctx, &list, sql, categoryID)
 	return list, err
 }
 
-func (r *bookCategoryRepo) DeleteByBookID(bookID uint64) error {
-	sql := `delete from book_categories where book_id=?`
-	result, err := r.DB.Exec(sql, bookID)
+func (r *bookCategoryRepo) DeleteByBookID(ctx context.Context, bookID uint64) error {
+	sql := r.DB.Rebind(`delete from book_categories where book_id=?`)
+
+	ctx, cancel := timeoutCtx(ctx)
+	defer cancel()
+
+	slog.InfoContext(ctx, sql, "book_id", slog.Int64Value(int64(bookID)))
+
+	result, err := r.DB.ExecContext(ctx, sql, bookID)
 	return updateErrorHandler(result, err)
 }
 
-func (r *bookCategoryRepo) DeleteByCategoryID(bookID uint64) error {
-	sql := `delete from book_categories where category_id=?`
-	result, err := r.DB.Exec(sql, bookID)
+func (r *bookCategoryRepo) DeleteByCategoryID(ctx context.Context, categoryID uint64) error {
+	sql := r.DB.Rebind(`delete from book_categories where category_id=?`)
+
+	ctx, cancel := timeoutCtx(ctx)
+	defer cancel()
+
+	slog.InfoContext(ctx, sql, "category_id", slog.Int64Value(int64(categoryID)))
+
+	result, err := r.DB.ExecContext(ctx, sql, categoryID)
 	return updateErrorHandler(result, err)
 }

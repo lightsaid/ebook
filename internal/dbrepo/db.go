@@ -6,11 +6,15 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"log/slog"
+	"regexp"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 )
+
+type envelop map[string]any
 
 // Queryable提取sql.DB和sql.Tx公共的方法当作一个接口,
 // 为了执行事务可以调用sql.DB的操作，在事务中服用基础的CRUD方法。
@@ -45,10 +49,8 @@ type Queryable interface {
 
 var (
 	Db *sqlx.DB
-)
-
-const (
-	defaultDuration = 3 * time.Second
+	// rex = regexp.MustCompile(`[\t \n]`)
+	spaceRex = regexp.MustCompile(`\s+`)
 )
 
 func Open() (*sqlx.DB, error) {
@@ -85,6 +87,31 @@ func Close() {
 	}
 }
 
+// debugSQL 使用sqlx.Named 和 db.Rebind 处理sql并输出sql日志
+//
+// arg 必须为结构体或者map，struct(带db tag)
+func debugSQL(ctx context.Context, db Queryable, sql string, arg any) (string, []any, error) {
+	// 使用 sqlx.Named 把 :param 转换成统一 ? 占位符，并生成 args
+	query, args, err := sqlx.Named(sql, arg)
+	if err != nil {
+		slog.ErrorContext(ctx, "debugSQL->sqlx.Named(sql,arg)", "error", err)
+		return "", nil, err
+	}
+
+	// 将'?'根据数据驱动绑定占位符类型(?/$1/@p1...)
+	query = db.Rebind(query)
+
+	// 清理多余的\t、\n,输出更容易阅读
+	cleanSQL := spaceRex.ReplaceAllString(query, " ")
+
+	// 输出 log
+	slog.InfoContext(ctx, "debugSQL SQL", slog.String("sql", cleanSQL))
+	slog.InfoContext(ctx, "debugSQL Args", slog.Any("args", args))
+
+	return query, args, nil
+}
+
+// execTx 执行事务公共方法
 func execTx(ctx context.Context, query Queryable, fn func(Repository) error) error {
 	db, ok := query.(*sqlx.DB)
 	if !ok {
@@ -106,6 +133,12 @@ func execTx(ctx context.Context, query Queryable, fn func(Repository) error) err
 	return tx.Commit()
 }
 
+// timeoutCtx 设置超时，并返回新的context
+func timeoutCtx(ctx context.Context) (context.Context, context.CancelFunc) {
+	// TODO: 使用配置
+	return context.WithTimeout(ctx, 5*time.Second)
+}
+
 func makeCtx() (context.Context, context.CancelFunc) {
-	return context.WithTimeout(context.Background(), defaultDuration)
+	return context.WithTimeout(context.Background(), 5*time.Second)
 }

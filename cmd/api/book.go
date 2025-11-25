@@ -26,7 +26,8 @@ func (app *Application) DeleteBookHandler(w http.ResponseWriter, r *http.Request
 
 func (app *Application) ListBookHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Info(r.URL.Path)
-	list, err := app.Db.BookRepo.ListWithCategory(10, 30)
+	ff := app.readPageQuery(r)
+	list, err := app.Db.BookRepo.ListWithCategory(r.Context(), ff)
 	if err != nil {
 		slog.Info(err.Error())
 		// TODO:

@@ -24,7 +24,7 @@ func (c Category) Verifiy(v *gotk.Validator) {
 	v.Check(len(c.CategoryName) > 0, "categoryName", "分类名称不能为空")
 }
 
-// SQLBookCategory 方便查询映射
+// SQLBookCategory 方便查询映射, 不存库
 type SQLBookCategory struct {
 	Category     Category     `db:"category"`
 	BookCategory BookCategory `db:"book_category"`
