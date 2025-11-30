@@ -6,6 +6,7 @@ type Repository struct {
 	CategoryRepo     CategoryRepo
 	PublisherRepo    PublisherRepo
 	BookCategoryRepo BookCategoryRepo
+	BannerRepo       BannerRepo
 }
 
 // NewRepository创建一个Repository仓库，使用Queryable接口，同时兼容sql.DB和sql.Tx方法
@@ -16,5 +17,6 @@ func NewRepository(db Queryable) Repository {
 		CategoryRepo:     NewCategoryRepo(db),
 		PublisherRepo:    NewPublisherRepo(db),
 		BookCategoryRepo: NewBookCategoryRepo(db),
+		BannerRepo:       NewBannerRepo(db),
 	}
 }

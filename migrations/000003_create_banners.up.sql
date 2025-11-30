@@ -1,0 +1,15 @@
+CREATE TABLE IF NOT EXISTS `banners` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '自增id',
+  `slogan` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '标语',
+  `link_type` INT NOT NULL DEFAULT 0 COMMENT '0内链 1外链',
+  `link_url` VARCHAR(255) NOT NULL COMMENT '链接',
+  `image_url` VARCHAR(255) NOT NULL COMMENT '图片地址',
+  `enable` INT NOT NULL DEFAULT 1 COMMENT '1启用 0停用',
+  `sort` INT NOT NULL DEFAULT 0 COMMENT '排序',
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted_at` TIMESTAMP NULL COMMENT '删除时间',
+  PRIMARY KEY (`id`),
+  INDEX `idx_created_at` (`created_at`),
+  INDEX `idx_deleted_at` (`deleted_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

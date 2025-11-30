@@ -55,6 +55,15 @@ func (app *Application) routes() http.Handler {
 		router.Get("/v1/publishers", app.ListPublisherHandler)
 	}
 
+	{
+		// banner api
+		router.Post("/v1/banner", app.PostBannerHandler)
+		router.Get("/v1/banner/{id:[0-9]+}", app.GetBannerHandler)
+		router.Put("/v1/banner/{id:[0-9]+}", app.PutBannerHandler)
+		router.Delete("/v1/banner/{id:[0-9]+}", app.DeleteBannerHandler)
+		router.Get("/v1/banners", app.ListBannerHandler)
+	}
+
 	mux := chi.NewRouter()
 	mux.Mount("/api", router)
 
