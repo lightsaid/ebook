@@ -15,9 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func makeEmptyIDBook(t *testing.T) *models.Book {
-	c := createAuthor(t)
-	p := createPublisher(t)
+func makeEmptyIDBookBy(authorID, publisherID uint64) *models.Book {
 	var status = 0
 	if random.RandomInt(1, 10) > 5 {
 		status = 1
@@ -26,9 +24,9 @@ func makeEmptyIDBook(t *testing.T) *models.Book {
 		ISBN:        random.RandomString(11),
 		Title:       random.RandomString(8),
 		Subtitle:    random.RandomString(20),
-		AuthorID:    c.ID,
+		AuthorID:    authorID,
 		CoverUrl:    random.RandomString(32),
-		PublisherID: p.ID,
+		PublisherID: publisherID,
 		Pubdate:     types.GxTime{Time: time.Now()},
 		Price:       uint(random.RandomInt(100, 300)),
 		Status:      status,
@@ -39,6 +37,13 @@ func makeEmptyIDBook(t *testing.T) *models.Book {
 	}
 
 	return b1
+}
+
+func makeEmptyIDBook(t *testing.T) *models.Book {
+	a := createAuthor(t)
+	p := createPublisher(t)
+
+	return makeEmptyIDBookBy(a.ID, p.ID)
 }
 
 func createBook(t *testing.T) *models.Book {
@@ -116,8 +121,9 @@ func TestListBook(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*5)
 	defer cancel()
 	ff := dbrepo.Filters{PageNum: 1, PageSize: 10}
-	list, err := tRepo.BookRepo.List(ctx, ff)
+	vo, err := tRepo.BookRepo.List(ctx, ff)
 	require.NoError(t, err)
+	list := vo.List.([]*models.Book)
 	require.True(t, len(list) == 10)
 
 	by, err := json.MarshalIndent(list, "", "\t")
@@ -196,7 +202,11 @@ func TestListByCategory(t *testing.T) {
 	c1 := b1.Categories[0]
 	require.NotEmpty(t, c1)
 	require.True(t, c1.ID > 0)
-	list, err := tRepo.BookRepo.ListByCategory(ctx, c1.ID)
+	f := dbrepo.Filters{
+		PageNum:  1,
+		PageSize: 10,
+	}
+	list, err := tRepo.BookRepo.ListByCategory(ctx, c1.ID, f)
 	require.NoError(t, err)
 	require.NotEmpty(t, list)
 
@@ -216,8 +226,84 @@ func TestListWithCategory(t *testing.T) {
 	require.NotEmpty(t, c1)
 	require.True(t, c1.ID > 0)
 	filter := dbrepo.Filters{PageNum: 1, PageSize: 2}
-	list, err := tRepo.BookRepo.ListWithCategory(ctx, filter)
+	vo, err := tRepo.BookRepo.ListWithCategory(ctx, filter)
+	list := vo.List.([]*models.Book)
+	require.True(t, len(list) == filter.PageSize)
 	require.NoError(t, err)
 	require.NotEmpty(t, list)
 	require.True(t, len(list) > 0)
+}
+
+func TestListByAuthor(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*5)
+	defer cancel()
+	a := createAuthor(t)
+	p := createPublisher(t)
+
+	f := dbrepo.Filters{PageNum: 1, PageSize: 10}
+	for i := range f.PageSize {
+		b := makeEmptyIDBookBy(a.ID, p.ID)
+		if i%2 == 0 {
+			c1 := createCategory(t)
+			c2 := createCategory(t)
+			b.Categories = []*models.Category{
+				c1, c2,
+			}
+		}
+		if len(b.Categories) > 0 {
+			_, err := tRepo.BookRepo.CreateTx(ctx, b)
+			require.NoError(t, err)
+		} else {
+			_, err := tRepo.BookRepo.Create(ctx, b)
+			require.NoError(t, err)
+		}
+	}
+
+	f.SortFields = []string{"-id", "-updated_at"}
+	vo, err := tRepo.BookRepo.ListByAuthor(ctx, a.ID, f)
+	require.NoError(t, err)
+	list := vo.List.([]*models.Book)
+	require.True(t, len(list) == f.PageSize)
+
+	by, err := json.MarshalIndent(list, "", " ")
+	require.NoError(t, err)
+
+	fmt.Println(string(by))
+}
+
+func TestListByPublisher(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*5)
+	defer cancel()
+	a := createAuthor(t)
+	p := createPublisher(t)
+
+	f := dbrepo.Filters{PageNum: 1, PageSize: 10}
+	for i := range f.PageSize {
+		b := makeEmptyIDBookBy(a.ID, p.ID)
+		if i%2 != 0 {
+			c1 := createCategory(t)
+			c2 := createCategory(t)
+			b.Categories = []*models.Category{
+				c1, c2,
+			}
+		}
+		if len(b.Categories) > 0 {
+			_, err := tRepo.BookRepo.CreateTx(ctx, b)
+			require.NoError(t, err)
+		} else {
+			_, err := tRepo.BookRepo.Create(ctx, b)
+			require.NoError(t, err)
+		}
+	}
+
+	f.SortFields = []string{"-id", "-updated_at"}
+	vo, err := tRepo.BookRepo.ListByPublisher(ctx, p.ID, f)
+	require.NoError(t, err)
+	list := vo.List.([]*models.Book)
+	require.True(t, len(list) == f.PageSize)
+
+	by, err := json.MarshalIndent(list, "", " ")
+	require.NoError(t, err)
+
+	fmt.Println(string(by))
 }

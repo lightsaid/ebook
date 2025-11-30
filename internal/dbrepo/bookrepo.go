@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 
 	"github.com/jmoiron/sqlx"
@@ -17,9 +18,11 @@ type BookRepo interface {
 	Get(ctx context.Context, id uint64) (*models.Book, error)
 	Update(ctx context.Context, book *models.Book) error   // 仅更新books表
 	UpdateTx(ctx context.Context, book *models.Book) error // 更新图书和与之关联的分类、出版社、作者
-	List(context.Context, Filters) ([]*models.Book, error)
-	ListByCategory(ctx context.Context, categoryID uint64) ([]*models.Book, error)
-	ListWithCategory(ctx context.Context, filter Filters) (list []*models.Book, err error)
+	List(context.Context, Filters) (*PageQueryVo, error)
+	ListByCategory(ctx context.Context, categoryID uint64, f Filters) (*PageQueryVo, error)
+	ListWithCategory(ctx context.Context, filter Filters) (*PageQueryVo, error)
+	ListByAuthor(ctx context.Context, authorID uint64, filter Filters) (*PageQueryVo, error)
+	ListByPublisher(ctx context.Context, publisherID uint64, filter Filters) (*PageQueryVo, error)
 	Delete(ctx context.Context, id uint64) error
 }
 
@@ -60,6 +63,7 @@ func bookFieldToSQLArgs(book *models.Book) map[string]any {
 	return args
 }
 
+// Create
 func (r *bookRepo) Create(ctx context.Context, book *models.Book) (uint64, error) {
 	sql := `
 	insert into books set 
@@ -78,7 +82,7 @@ func (r *bookRepo) Create(ctx context.Context, book *models.Book) (uint64, error
 		description=:description
 	`
 
-	ctx, cancel := makeCtx()
+	ctx, cancel := timeoutCtx(ctx)
 	defer cancel()
 
 	args := bookFieldToSQLArgs(book)
@@ -89,6 +93,7 @@ func (r *bookRepo) Create(ctx context.Context, book *models.Book) (uint64, error
 	return insertErrorHandler(result, err)
 }
 
+// CreateTx
 func (r *bookRepo) CreateTx(ctx context.Context, book *models.Book) (uint64, error) {
 	ctx, cancel := timeoutCtx(ctx)
 	defer cancel()
@@ -272,12 +277,40 @@ func (r *bookRepo) UpdateTx(ctx context.Context, book *models.Book) error {
 	return err
 }
 
-func (r *bookRepo) List(ctx context.Context, filter Filters) ([]*models.Book, error) {
+// List 分页查询图书，不包括分类信息
+func (r *bookRepo) List(ctx context.Context, f Filters) (*PageQueryVo, error) {
+	ctx, cancel := timeoutCtx(ctx)
+	defer cancel()
+
+	// 查询总数
+	totalSQL := r.DB.Rebind(`
+	select count(*) as total from books b
+	left join author a on a.id=b.author_id
+	left join publisher p on p.id=b.publisher_id
+	where b.deleted_at is null`)
+
+	var total int
+	var vo PageQueryVo
+
+	err := r.DB.GetContext(ctx, &total, totalSQL)
+	if err != nil {
+		// 暂无数据
+		if errors.Is(err, sql.ErrNoRows) {
+			return &vo, nil
+		}
+		return nil, err
+	}
+
 	/* NOTE: sqlx 查询嵌套结构体字段语法
 	author_name as "author.author_name",
 	publisher_name as "publisher.publisher_name"
 	*/
-	sql := r.DB.Rebind(`
+
+	if len(f.SortSafelist) == 0 {
+		f.SortSafelist = r.defaultSortSafelist()
+	}
+
+	query := fmt.Sprintf(`
 	select 
 		b.*, 
 		a.id as "author.id",
@@ -287,26 +320,55 @@ func (r *bookRepo) List(ctx context.Context, filter Filters) ([]*models.Book, er
 	from books b
 	left join author a on a.id=b.author_id
 	left join publisher p on p.id=b.publisher_id
-	where b.deleted_at is null order by b.id desc limit ? offset ?`)
+	where b.deleted_at is null order by %s limit ? offset ?`, f.sortColumnWithDefault())
+
+	query = r.DB.Rebind(query)
+
+	list := make([]*models.Book, 0, f.limit())
+
+	slog.InfoContext(
+		ctx, spaceRex.ReplaceAllString(query, " "),
+		"limit", slog.IntValue(f.limit()),
+		"offset", slog.IntValue(f.offset()))
+
+	err = r.DB.SelectContext(ctx, &list, query, f.limit(), f.offset())
+
+	vo.List = list
+	vo.Metadata = calculateMetadata(total, f.PageNum, f.PageSize)
+
+	return &vo, err
+}
+
+// ListByCategory 根据分类查询图书
+func (r *bookRepo) ListByCategory(ctx context.Context, categoryID uint64, f Filters) (*PageQueryVo, error) {
+	totalSQL := `
+		select count(*) as total from books b 
+		left join book_categories bc on b.id = bc.book_id
+		left join category c on c.id = bc.category_id
+		left join author a on a.id = b.author_id
+		left join publisher p on p.id = b.publisher_id
+		where bc.category_id = ? and b.deleted_at is null;`
+
+	var total int
+	var vo PageQueryVo
+
 	ctx, cancel := timeoutCtx(ctx)
 	defer cancel()
 
-	list := make([]*models.Book, 0, filter.limit())
+	err := r.DB.GetContext(ctx, &total, totalSQL, categoryID)
+	if err != nil {
+		// 暂无数据
+		if errors.Is(err, sql.ErrNoRows) {
+			return &vo, nil
+		}
+		return nil, err
+	}
 
-	// TODO: 返回 PageQueryVo 结构类型数据
+	if len(f.SortSafelist) == 0 {
+		f.SortSafelist = r.defaultSortSafelist()
+	}
 
-	slog.InfoContext(
-		ctx, spaceRex.ReplaceAllString(sql, " "),
-		"limit", slog.IntValue(filter.limit()),
-		"offset", slog.IntValue(filter.offset()))
-
-	err := r.DB.SelectContext(ctx, &list, sql, filter.limit(), filter.offset())
-	return list, err
-}
-
-// ListByCategory 根据分类查询图书 TODO: 分页
-func (r *bookRepo) ListByCategory(ctx context.Context, categoryID uint64) (list []*models.Book, err error) {
-	sql := `
+	query := fmt.Sprintf(`
 		select 
 			b.*, 
 			a.id as "author.id",
@@ -318,27 +380,25 @@ func (r *bookRepo) ListByCategory(ctx context.Context, categoryID uint64) (list 
 		left join category c on c.id = bc.category_id
 		left join author a on a.id = b.author_id
 		left join publisher p on p.id = b.publisher_id
-		where bc.category_id = ? and b.deleted_at is null;`
-	list = make([]*models.Book, 0, 10)
+		where bc.category_id = ? and b.deleted_at is null 
+		order by %s`, f.sortColumnWithDefault())
 
-	ctx, cancel := timeoutCtx(ctx)
-	defer cancel()
+	query = r.DB.Rebind(query)
 
-	err = r.DB.SelectContext(ctx, &list, sql, categoryID)
-	return list, err
+	list := make([]*models.Book, 0, f.PageSize)
+
+	err = r.DB.SelectContext(ctx, &list, query, categoryID)
+	vo.List = list
+	vo.Metadata = calculateMetadata(total, f.PageNum, f.PageSize)
+
+	return &vo, err
 }
 
-// ListWithCategory 查询图书列表和分类
-func (r *bookRepo) ListWithCategory(ctx context.Context, filter Filters) (list []*models.Book, err error) {
-	ctx, cancel := timeoutCtx(ctx)
-	defer cancel()
-
-	list, err = r.List(ctx, filter)
-	if err != nil {
-		return list, err
-	}
-
+// listCategoryByBooks 根据图书查询分类
+func (r *bookRepo) listCategoryByBooks(ctx context.Context, list []*models.Book) ([]*models.Book, error) {
 	var bookIDs []uint64
+
+	// 提取 book id
 	for _, x := range list {
 		bookIDs = append(bookIDs, x.ID)
 	}
@@ -347,7 +407,13 @@ func (r *bookRepo) ListWithCategory(ctx context.Context, filter Filters) (list [
 		return list, nil
 	}
 
-	sql, arg, err := sqlx.In(
+	var categories []*models.SQLBookCategory
+	if len(bookIDs) <= 0 {
+		return list, nil
+	}
+
+	// 查询分类
+	query, arg, err := sqlx.In(
 		`select 
 				c.id as "category.id",
 				c.category_name as "category.category_name",
@@ -367,27 +433,103 @@ func (r *bookRepo) ListWithCategory(ctx context.Context, filter Filters) (list [
 		return list, err
 	}
 
-	var cc []models.SQLBookCategory
+	query = r.DB.Rebind(query)
 
-	sql = r.DB.Rebind(sql)
+	slog.DebugContext(ctx, query, "args", slog.AnyValue(arg))
 
-	slog.InfoContext(ctx, sql, "args", slog.AnyValue(arg))
+	err = r.DB.SelectContext(ctx, &categories, query, arg...)
 
-	err = r.DB.Select(&cc, sql, arg...)
+	// 没有分类
+	if err != nil && errors.Is(err, sql.ErrNoRows) {
+		return list, nil
+	}
+
+	// 查询分类错误
 	if err != nil {
 		return list, err
 	}
 
 	// 组合数据
-
-	// 方式1:
 	for i := range list {
-		for _, x := range cc {
+		for _, x := range categories {
 			if list[i].ID == x.BookCategory.BookID {
 				list[i].Categories = append(list[i].Categories, &x.Category)
 			}
 		}
 	}
+
+	return list, err
+}
+
+// ListWithCategory 查询图书列表和分类
+func (r *bookRepo) ListWithCategory(ctx context.Context, filter Filters) (*PageQueryVo, error) {
+	ctx, cancel := timeoutCtx(ctx)
+	defer cancel()
+
+	vo, err := r.List(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	list, ok := vo.List.([]*models.Book)
+	if !ok {
+		panic("list, ok := vo.List.([]*models.Book)")
+	}
+
+	list, err = r.listCategoryByBooks(ctx, list)
+	vo.List = list
+	return vo, err
+
+	// var bookIDs []uint64
+	// for _, x := range list {
+	// 	bookIDs = append(bookIDs, x.ID)
+	// }
+
+	// if len(bookIDs) <= 0 {
+	// 	return list, nil
+	// }
+
+	// sql, arg, err := sqlx.In(
+	// 	`select
+	// 			c.id as "category.id",
+	// 			c.category_name as "category.category_name",
+	// 			c.icon as "category.icon",
+	// 			c.sort as "category.sort",
+	// 			c.created_at as "category.created_at",
+	// 			c.updated_at as "category.updated_at",
+	// 		 	bc.book_id AS "book_category.book_id",
+	//   		bc.category_id AS "book_category.category_id"
+	// 		from category as c
+	// 		left join book_categories bc on c.id = bc.category_id
+	// 		where bc.book_id in (?);
+	// 	`,
+	// 	bookIDs,
+	// )
+	// if err != nil {
+	// 	return list, err
+	// }
+
+	// var categories []models.SQLBookCategory
+
+	// sql = r.DB.Rebind(sql)
+
+	// slog.InfoContext(ctx, sql, "args", slog.AnyValue(arg))
+
+	// err = r.DB.SelectContext(ctx, &categories, sql, arg...)
+	// if err != nil {
+	// 	return list, err
+	// }
+
+	// 组合数据
+
+	// 方式1:
+	// for i := range list {
+	// 	for _, x := range categories {
+	// 		if list[i].ID == x.BookCategory.BookID {
+	// 			list[i].Categories = append(list[i].Categories, &x.Category)
+	// 		}
+	// 	}
+	// }
 
 	// 方式2:
 	// bookMap := make(map[uint64]*models.Book)
@@ -396,14 +538,129 @@ func (r *bookRepo) ListWithCategory(ctx context.Context, filter Filters) (list [
 	// 	bookMap[list[i].ID] = list[i]
 	// }
 	// // 查找对应关系
-	// for _, bc := range cc {
+	// for _, bc := range categories {
 	// 	book := bookMap[bc.BookCategory.BookID]
 	// 	if book != nil {
 	// 		book.Categories = append(book.Categories, &bc.Category)
 	// 	}
 	// }
 
-	return list, nil
+	// return list, nil
+}
+
+func (r *bookRepo) ListByAuthor(ctx context.Context, authorID uint64, f Filters) (*PageQueryVo, error) {
+	// 如果没有使用默认的
+	if len(f.SortSafelist) == 0 {
+		f.SortSafelist = r.defaultSortSafelist()
+	}
+
+	ctx, cancel := timeoutCtx(ctx)
+	defer cancel()
+
+	totalSQL := `select count(*) as total from books b 
+		left join author a on a.id = b.author_id
+		left join publisher p on p.id = b.publisher_id
+		where a.id = ? and b.deleted_at is null
+		`
+
+	var total int
+	var vo PageQueryVo
+
+	err := r.DB.GetContext(ctx, &total, totalSQL, authorID)
+	if err != nil {
+		// 暂无数据
+		if errors.Is(err, sql.ErrNoRows) {
+			return &vo, nil
+		}
+		return nil, err
+	}
+
+	query := fmt.Sprintf(`
+		select 
+			b.*, 
+			a.id as "author.id",
+			author_name as "author.author_name", 
+			p.id as "publisher.id",
+			publisher_name as "publisher.publisher_name"
+		from books b 
+		left join author a on a.id = b.author_id
+		left join publisher p on p.id = b.publisher_id
+		where a.id = ? and b.deleted_at is null
+		order by %s limit ? offset ?
+		`, f.sortColumnWithDefault())
+
+	query = r.DB.Rebind(query)
+
+	// NOTE: 排序不能使用占位符，因为会解析为：ORDER BY 'id DESC,updated_at DESC'（把整个排序当成一个字符串常量）
+
+	list := make([]*models.Book, 0, f.PageSize)
+
+	err = r.DB.SelectContext(ctx, &list, query, authorID, f.limit(), f.offset())
+	if err != nil {
+		return &vo, err
+	}
+
+	list, err = r.listCategoryByBooks(ctx, list)
+	vo.List = list
+	vo.Metadata = calculateMetadata(total, f.PageNum, f.PageSize)
+
+	return &vo, err
+}
+
+func (r *bookRepo) ListByPublisher(ctx context.Context, publisherID uint64, f Filters) (*PageQueryVo, error) {
+	// 如果没有使用默认的
+	if len(f.SortSafelist) == 0 {
+		f.SortSafelist = r.defaultSortSafelist()
+	}
+
+	ctx, cancel := timeoutCtx(ctx)
+	defer cancel()
+
+	totalSQL := `select count(*) as total from books b 
+		left join author a on a.id = b.author_id
+		left join publisher p on p.id = b.publisher_id
+		where p.id = ? and b.deleted_at is null`
+
+	var total int
+	var vo PageQueryVo
+
+	err := r.DB.GetContext(ctx, &total, totalSQL, publisherID)
+	if err != nil {
+		// 暂无数据
+		if errors.Is(err, sql.ErrNoRows) {
+			return &vo, nil
+		}
+		return nil, err
+	}
+
+	query := fmt.Sprintf(`
+		select 
+			b.*, 
+			a.id as "author.id",
+			author_name as "author.author_name", 
+			p.id as "publisher.id",
+			publisher_name as "publisher.publisher_name"
+		from books b 
+		left join author a on a.id = b.author_id
+		left join publisher p on p.id = b.publisher_id
+		where p.id = ? and b.deleted_at is null
+		order by %s limit ? offset ?
+		`, f.sortColumnWithDefault())
+
+	query = r.DB.Rebind(query)
+
+	list := make([]*models.Book, 0, f.PageSize)
+
+	err = r.DB.SelectContext(ctx, &list, query, publisherID, f.limit(), f.offset())
+	if err != nil {
+		return &vo, err
+	}
+
+	list, err = r.listCategoryByBooks(ctx, list)
+	vo.List = list
+	vo.Metadata = calculateMetadata(total, f.PageNum, f.PageSize)
+
+	return &vo, err
 }
 
 func (r *bookRepo) Delete(ctx context.Context, id uint64) error {
@@ -415,4 +672,15 @@ func (r *bookRepo) Delete(ctx context.Context, id uint64) error {
 	slog.DebugContext(ctx, query, slog.Int64("id", int64(id)))
 
 	return updateErrorHandler(r.DB.ExecContext(ctx, query, id))
+}
+
+// sortSafelist 导出默认的安全排序字段
+func (r *bookRepo) defaultSortSafelist() []string {
+	return []string{
+		"id", "isbn", "title", "subtitle", "author_id", "publisher_id", "pubdate",
+		"price", "status", "type", "stock", "created_at", "updated_at",
+
+		"-id", "-isbn", "-title", "-subtitle", "-author_id", "-publisher_id",
+		"-pubdate", "-price", "-status", "-type", "-stock", "-created_at", "-updated_at",
+	}
 }

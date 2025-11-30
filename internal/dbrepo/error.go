@@ -12,7 +12,7 @@ import (
 
 var (
 	ErrInsertIDZero       = errors.New("新增数据返回的id为0")
-	ErrBookCategoryNoRows = errors.New("没有可添加的数据")
+	ErrBookCategoryNoRows = errors.New("图书分类不存在")
 
 	ErrNotFound     = errors.New("记录不存在")
 	ErrInsertFailed = errors.New("插入数据失败")

@@ -24,6 +24,8 @@ type Filters struct {
 	SortSafelist []string // 定义安全的排序字段，带"-"的是DESC，反之ASC
 }
 
+// 使用时，先要设置 SortSafelist 安全字段值
+//
 // sortColumn 获取安全的排序字段，有"-"就去掉,返回一个string数组：
 // ['created_at DESC', 'id ASC']
 func (f Filters) sortColumn() string {
@@ -38,6 +40,16 @@ func (f Filters) sortColumn() string {
 	}
 
 	return strings.Join(sorts, ",")
+}
+
+// sortColumnWithDefault 默认值为 "id ASC" 的 sortColumn 方法
+func (f Filters) sortColumnWithDefault() string {
+	sortText := f.sortColumn()
+	if sortText == "" {
+		return " id ASC "
+	}
+
+	return sortText
 }
 
 // sortDirection 获取排序顺序 带"-"为DESC，反之ASC
@@ -64,12 +76,13 @@ func (f *Filters) check() {
 	}
 }
 
-// limit 限制每页多少条
+// limit 先检查在返回限制每页多少条
 func (f Filters) limit() int {
 	f.check()
 	return f.PageSize
 }
 
+// offset 先检查在返回分页起点
 func (f Filters) offset() int {
 	f.check()
 	return (f.PageNum - 1) * f.PageSize
@@ -82,6 +95,7 @@ type Metadata struct {
 	TotalCount int `json:"totalCount,omitzero"`
 }
 
+// calculateMetadata 计算分页数据
 func calculateMetadata(totalCount, pageNum, pageSize int) Metadata {
 	if totalCount == 0 {
 		return Metadata{}
@@ -95,15 +109,22 @@ func calculateMetadata(totalCount, pageNum, pageSize int) Metadata {
 	}
 }
 
+// PageQueryVo 分页数据通用结构体，意在分页数据返回统一结构体
 type PageQueryVo struct {
-	List     any      `json:"list"`
-	Metadata Metadata `json:"metadata"`
+	List      any      `json:"list"`
+	Metadata  Metadata `json:"metadata"`
+	ExtraData any      `json:"extraData,omitempty"`
 }
 
-// 构建统一返回数据
-func makePageQueryVo(metadata Metadata, list any) *PageQueryVo {
+// makePageQueryVo 构建统一返回数据,extras 是额外数据，有则返回第一个
+func makePageQueryVo(metadata Metadata, list any, extras ...any) *PageQueryVo {
+	var extra any
+	if len(extras) > 0 {
+		extra = extras[0]
+	}
 	return &PageQueryVo{
-		List:     list,
-		Metadata: metadata,
+		List:      list,
+		Metadata:  metadata,
+		ExtraData: extra,
 	}
 }

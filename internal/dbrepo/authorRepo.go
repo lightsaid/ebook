@@ -85,7 +85,7 @@ func (r *authorRepo) Get(ctx context.Context, id uint64) (author *models.Author,
 func (r *authorRepo) List(ctx context.Context, f Filters) (*PageQueryVo, error) {
 	// 如果没有使用默认的
 	if len(f.SortSafelist) == 0 {
-		f.SortSafelist = r.sortSafelist()
+		f.SortSafelist = r.defaultSortSafelist()
 	}
 
 	sortFields := f.sortColumn()
@@ -158,8 +158,8 @@ func (r *authorRepo) Delete(ctx context.Context, id uint64) error {
 	return updateErrorHandler(result, err)
 }
 
-// sortSafelist 导出默认的安全排序字段
-func (r *authorRepo) sortSafelist() []string {
+// defaultSortSafelist 导出默认的安全排序字段
+func (r *authorRepo) defaultSortSafelist() []string {
 	return []string{
 		"id", "author_name", "created_at", "updated_at",
 		"-id", "-author_name", "-created_at", "-updated_at",

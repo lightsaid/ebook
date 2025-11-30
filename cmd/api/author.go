@@ -1,17 +1,81 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/lightsaid/ebook/internal/dbrepo"
+	"github.com/lightsaid/ebook/internal/models"
 )
 
-func (app *Application) PostAuthorHandler(w http.ResponseWriter, r *http.Request)   {}
-func (app *Application) GetAuthorHandler(w http.ResponseWriter, r *http.Request)    {}
-func (app *Application) PutAuthorHandler(w http.ResponseWriter, r *http.Request)    {}
-func (app *Application) DeleteAuthorHandler(w http.ResponseWriter, r *http.Request) {}
+// PostAuthorHandler
+func (app *Application) PostAuthorHandler(w http.ResponseWriter, r *http.Request) {
+	var author models.Author
+	if ok := app.ShouldBindJSON(w, r, &author); !ok {
+		return
+	}
+
+	newID, err := app.Db.AuthorRepo.Create(r.Context(), author.AuthorName)
+	if err != nil {
+		a := dbrepo.ConvertToApiError(err)
+		app.FAIL(w, r, a)
+		return
+	}
+
+	app.SUCC(w, r, newID)
+}
+func (app *Application) GetAuthorHandler(w http.ResponseWriter, r *http.Request) {
+	id, a := app.readIntParam(r, "id")
+	if a != nil {
+		app.FAIL(w, r, a)
+		return
+	}
+
+	author, err := app.Db.AuthorRepo.Get(r.Context(), id)
+	if err != nil {
+		a := dbrepo.ConvertToApiError(err)
+		app.FAIL(w, r, a)
+		return
+	}
+
+	app.SUCC(w, r, author)
+}
+func (app *Application) PutAuthorHandler(w http.ResponseWriter, r *http.Request) {
+	var author models.Author
+	if ok := app.ShouldBindJSON(w, r, &author); !ok {
+		return
+	}
+
+	id, a := app.readIntParam(r, "id")
+	if a != nil {
+		app.FAIL(w, r, a)
+		return
+	}
+
+	err := app.Db.AuthorRepo.Update(r.Context(), id, author.AuthorName)
+	if err != nil {
+		a = dbrepo.ConvertToApiError(err)
+		app.FAIL(w, r, a)
+		return
+	}
+
+	app.SUCC(w, r, id)
+}
+func (app *Application) DeleteAuthorHandler(w http.ResponseWriter, r *http.Request) {
+	id, a := app.readIntParam(r, "id")
+	if a != nil {
+		app.FAIL(w, r, a)
+		return
+	}
+
+	err := app.Db.AuthorRepo.Delete(r.Context(), id)
+	if err != nil {
+		a := dbrepo.ConvertToApiError(err)
+		app.FAIL(w, r, a)
+		return
+	}
+
+	app.SUCC(w, r, id)
+}
 
 // 分页查询，比如： /api/v1/authors?pageNum=1&pageSize=5&sortFields=-created_at&sortFields=id
 //
@@ -26,9 +90,6 @@ func (app *Application) ListAuthorHandler(w http.ResponseWriter, r *http.Request
 		app.FAIL(w, r, a)
 		return
 	}
-
-	by, _ := json.Marshal(data)
-	fmt.Println(">>>> ", string(by))
 
 	app.SUCC(w, r, data)
 }
