@@ -9,12 +9,12 @@ import (
 
 // PostBannerHandler
 func (app *Application) PostBannerHandler(w http.ResponseWriter, r *http.Request) {
-	var p models.Banner
-	if ok := app.ShouldBindJSON(w, r, &p); !ok {
+	var banner models.Banner
+	if ok := app.ShouldBindJSON(w, r, &banner); !ok {
 		return
 	}
 
-	id, err := app.Db.BannerRepo.Create(r.Context(), p.BannerName)
+	id, err := app.Db.BannerRepo.Create(r.Context(), &banner)
 	if err != nil {
 		a := dbrepo.ConvertToApiError(err)
 		app.FAIL(w, r, a)
@@ -36,8 +36,8 @@ func (app *Application) GetBannerHandler(w http.ResponseWriter, r *http.Request)
 
 // PutBannerHandler
 func (app *Application) PutBannerHandler(w http.ResponseWriter, r *http.Request) {
-	var p models.Banner
-	if ok := app.ShouldBindJSON(w, r, &p); !ok {
+	var banner models.Banner
+	if ok := app.ShouldBindJSON(w, r, &banner); !ok {
 		return
 	}
 
@@ -47,7 +47,7 @@ func (app *Application) PutBannerHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	err := app.Db.BannerRepo.Update(r.Context(), p.BannerName)
+	err := app.Db.BannerRepo.Update(r.Context(), &banner)
 	if err != nil {
 		a := dbrepo.ConvertToApiError(err)
 		app.FAIL(w, r, a)
