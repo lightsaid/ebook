@@ -17,7 +17,7 @@ import (
 
 func (app *Application) serve(logger *slog.Logger) error {
 	srv := http.Server{
-		Addr:        "0.0.0.0:6000",
+		Addr:        "0.0.0.0:4000",
 		Handler:     app.routes(),
 		IdleTimeout: time.Minute,
 

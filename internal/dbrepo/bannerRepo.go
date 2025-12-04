@@ -10,8 +10,8 @@ import (
 type BannerRepo interface {
 	Create(ctx context.Context, banner *models.Banner) (uint64, error)
 	Update(ctx context.Context, banner *models.Banner) error
-	Get(ctx context.Context, id uint64) (*models.Publisher, error)
-	List(ctx context.Context) ([]*models.Publisher, error)
+	Get(ctx context.Context, id uint64) (*models.Banner, error)
+	List(ctx context.Context) ([]*models.Banner, error)
 	Delete(ctx context.Context, id uint64) error
 }
 
@@ -50,7 +50,7 @@ func (r *bannerRepo) Update(ctx context.Context, banner *models.Banner) error {
 	slogan=:slogan, link_type=:link_type, 
 	link_url=:link_url, image_url=:image_url, 
 	enable=:enable, sort=:sort
-	where deleted_at is not null;`
+	where id=:id and deleted_at is null;`
 
 	ctx, cancel := timeoutCtx(ctx)
 	defer cancel()
@@ -65,7 +65,7 @@ func (r *bannerRepo) Update(ctx context.Context, banner *models.Banner) error {
 	return updateErrorHandler(result, err)
 }
 
-func (r *bannerRepo) Get(ctx context.Context, id uint64) (banners *models.Publisher, err error) {
+func (r *bannerRepo) Get(ctx context.Context, id uint64) (banners *models.Banner, err error) {
 	sql := `select * from banners where id = ? and deleted_at is null;`
 
 	ctx, cancel := timeoutCtx(ctx)
@@ -73,13 +73,13 @@ func (r *bannerRepo) Get(ctx context.Context, id uint64) (banners *models.Publis
 
 	query := r.DB.Rebind(sql)
 
-	banners = new(models.Publisher)
+	banners = new(models.Banner)
 
 	err = r.DB.GetContext(ctx, banners, query, id)
 	return banners, err
 }
 
-func (r *bannerRepo) List(ctx context.Context) (list []*models.Publisher, err error) {
+func (r *bannerRepo) List(ctx context.Context) (list []*models.Banner, err error) {
 	sql := `select * from banners where deleted_at is null;`
 
 	ctx, cancel := timeoutCtx(ctx)

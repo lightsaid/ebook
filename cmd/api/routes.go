@@ -1,11 +1,17 @@
 package main
 
 import (
+	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/lightsaid/gotk"
+
+	"github.com/lightsaid/ebook/docs"
+
+	httpSwagger "github.com/swaggo/http-swagger/v2"
 )
 
 func (app *Application) routes() http.Handler {
@@ -67,7 +73,32 @@ func (app *Application) routes() http.Handler {
 	mux := chi.NewRouter()
 	mux.Mount("/api", router)
 
-	return gotk.SetRequestIDCtx(mux)
+	setupSwaggerDoc(mux)
+
+	return gotk.WithRequestIDCtx(mux)
 	// 超时控制
 	//	return http.TimeoutHandler(mux, 5*time.Second, "请求超时")
+}
+
+// TODO: 配置
+
+func setupSwaggerDoc(mux *chi.Mux) {
+	slog.Info("Swagger: http://localhost:4000/swagger/index.html")
+
+	docs.SwaggerInfo.Host = "localhost:4000" // swagger服务host
+	docs.SwaggerInfo.BasePath = "/api"       // api请求前缀
+
+	docsURL := fmt.Sprintf("http://%s/swagger/doc.json", docs.SwaggerInfo.Host)
+
+	// fmt.Println("docsURL: ", docsURL)
+
+	mux.Get("/swagger/*", httpSwagger.Handler(
+		httpSwagger.URL(docsURL),
+	))
+
+	// 调试输出注册的路由
+	chi.Walk(mux, func(method string, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
+		fmt.Printf("%s -> %s\n", method, route)
+		return nil
+	})
 }

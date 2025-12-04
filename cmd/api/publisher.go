@@ -10,7 +10,7 @@ import (
 // PostPublisherHandler
 func (app *Application) PostPublisherHandler(w http.ResponseWriter, r *http.Request) {
 	var p models.Publisher
-	if ok := app.ShouldBindJSON(w, r, &p); !ok {
+	if ok := app.ShouldBindJSONAndCheck(w, r, &p); !ok {
 		return
 	}
 
@@ -37,7 +37,7 @@ func (app *Application) GetPublisherHandler(w http.ResponseWriter, r *http.Reque
 // PutPublisherHandler
 func (app *Application) PutPublisherHandler(w http.ResponseWriter, r *http.Request) {
 	var p models.Publisher
-	if ok := app.ShouldBindJSON(w, r, &p); !ok {
+	if ok := app.ShouldBindJSONAndCheck(w, r, &p); !ok {
 		return
 	}
 
@@ -46,6 +46,8 @@ func (app *Application) PutPublisherHandler(w http.ResponseWriter, r *http.Reque
 		app.FAIL(w, r, a)
 		return
 	}
+
+	// TODO: 获取/赋值才更新
 
 	err := app.Db.PublisherRepo.Update(r.Context(), p.PublisherName)
 	if err != nil {

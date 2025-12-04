@@ -44,7 +44,7 @@ func (r *publisherRepo) Create(ctx context.Context, name string) (uint64, error)
 }
 
 func (r *publisherRepo) Update(ctx context.Context, name string) error {
-	sql := `update publisher set publisher_name = ? where deleted_at is not null;`
+	sql := `update publisher set publisher_name = ? where deleted_at is null;`
 
 	ctx, cancel := timeoutCtx(ctx)
 	defer cancel()

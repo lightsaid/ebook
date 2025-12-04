@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS `books` (
   `publisher_id` BIGINT UNSIGNED NOT NULL COMMENT '出版社id',
   `pubdate` DATE NOT NULL COMMENT '出版日期',
   `price` INT UNSIGNED NOT null DEFAULT 0 COMMENT '价格,单位分',
-  `status` TINYINT NOT NULL DEFAULT 0 COMMENT '0-下架,1-上架 ',
+  `status` TINYINT NOT NULL DEFAULT 0 COMMENT '0-下架,1-上架',
   `type` TINYINT NOT NULL DEFAULT 1 COMMENT '1-电子书,2-实体,3-电子书+实体',
   `stock` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '库存',
   `source_url` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '电子书资源路径',

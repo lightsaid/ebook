@@ -10,7 +10,7 @@ import (
 // PostAuthorHandler
 func (app *Application) PostAuthorHandler(w http.ResponseWriter, r *http.Request) {
 	var author models.Author
-	if ok := app.ShouldBindJSON(w, r, &author); !ok {
+	if ok := app.ShouldBindJSONAndCheck(w, r, &author); !ok {
 		return
 	}
 
@@ -41,7 +41,7 @@ func (app *Application) GetAuthorHandler(w http.ResponseWriter, r *http.Request)
 }
 func (app *Application) PutAuthorHandler(w http.ResponseWriter, r *http.Request) {
 	var author models.Author
-	if ok := app.ShouldBindJSON(w, r, &author); !ok {
+	if ok := app.ShouldBindJSONAndCheck(w, r, &author); !ok {
 		return
 	}
 

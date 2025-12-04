@@ -7,10 +7,24 @@ import (
 	"github.com/lightsaid/ebook/internal/models"
 )
 
-// PostBookHandler
+// PostBookHandler godoc
+//
+//	@Summary		创建图书
+//	@Description	用户创建图书
+//	@Tags			book
+//	@Accept			json
+//	@Produce		json
+//	@Param			payload	body		models.Book	true	"EBook payload"
+//	@Success		200		{object}	int
+//	@Failure		400		{object}	error
+//	@Failure		401		{object}	error
+//	@Failure		404		{object}	error
+//	@Failure		500		{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/v1/book [post]
 func (app *Application) PostBookHandler(w http.ResponseWriter, r *http.Request) {
 	var book models.Book
-	if ok := app.ShouldBindJSON(w, r, &book); !ok {
+	if ok := app.ShouldBindJSONAndCheck(w, r, &book); !ok {
 		return
 	}
 
@@ -44,10 +58,20 @@ func (app *Application) GetBookHandler(w http.ResponseWriter, r *http.Request) {
 
 // PutBookHandler
 func (app *Application) PutBookHandler(w http.ResponseWriter, r *http.Request) {
-	var book models.Book
-	if ok := app.ShouldBindJSON(w, r, &book); !ok {
+	id, a := app.readIntParam(r, "id")
+	if a != nil {
+		app.FAIL(w, r, a)
 		return
 	}
+
+	var book models.Book
+	if ok := app.ShouldBindJSONAndCheck(w, r, &book); !ok {
+		return
+	}
+
+	book.ID = id
+
+	// TODO: 获取/赋值才更新
 
 	err := app.Db.BookRepo.UpdateTx(r.Context(), &book)
 	if err != nil {

@@ -70,6 +70,8 @@ func (app *Application) readPageQuery(r *http.Request) dbrepo.Filters {
 func (app *Application) ShouldBindJSON(w http.ResponseWriter, r *http.Request, dst any) bool {
 	err := gotk.ReadJSON(w, r, dst)
 	if err != nil {
+		a := errs.ErrBadRequest.WithMessage(err.Error())
+		fmt.Println(a.Error())
 		app.FAIL(w, r, errs.ErrBadRequest.WithMessage(err.Error()))
 		return false
 	}
@@ -129,20 +131,16 @@ func (app *Application) write(
 		slog.InfoContext(
 			r.Context(),
 			message,
-			"status",
-			slog.IntValue(a.StatusCode()),
-			"bizCode",
-			slog.StringValue(a.BizCode()),
+			"error",
+			slog.StringValue(a.Error()),
 		)
 	} else {
 		// 记录错误日志
 		slog.ErrorContext(
 			r.Context(),
 			message,
-			"status",
-			slog.IntValue(a.StatusCode()),
-			"bizCode",
-			slog.StringValue(a.BizCode()),
+			"error",
+			slog.StringValue(a.Error()),
 			"data",
 			slog.AnyValue(data),
 		)

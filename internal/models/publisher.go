@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/lightsaid/ebook/internal/types"
+	"github.com/lightsaid/gotk"
 )
 
 type Publisher struct {
@@ -12,4 +13,8 @@ type Publisher struct {
 	CreatedAt     types.GxTime `db:"created_at" json:"createdAt"`
 	UpdatedAt     types.GxTime `db:"updated_at" json:"UpdatedAt"`
 	DeletedAt     *time.Time   `db:"deleted_at" json:"-"`
+}
+
+func (p Publisher) Verifiy(v *gotk.Validator) {
+	v.Check(p.PublisherName != "", "publisherName", "出版社名称必填")
 }

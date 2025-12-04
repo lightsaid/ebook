@@ -53,3 +53,6 @@ seed:
 
 api:
 	go run ./cmd/api/*.go
+
+swag:
+	swag init -g cmd/api/main.go -o ./docs
