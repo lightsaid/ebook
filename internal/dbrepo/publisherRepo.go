@@ -31,7 +31,7 @@ func NewPublisherRepo(db Queryable) *publisherRepo {
 func (r *publisherRepo) Create(ctx context.Context, name string) (uint64, error) {
 	sql := `insert publisher set publisher_name = ?;`
 
-	ctx, cancel := timeoutCtx(ctx)
+	ctx, cancel := dbtk.withTimeout(ctx)
 	defer cancel()
 
 	query := r.DB.Rebind(sql)
@@ -46,7 +46,7 @@ func (r *publisherRepo) Create(ctx context.Context, name string) (uint64, error)
 func (r *publisherRepo) Update(ctx context.Context, name string) error {
 	sql := `update publisher set publisher_name = ? where deleted_at is null;`
 
-	ctx, cancel := timeoutCtx(ctx)
+	ctx, cancel := dbtk.withTimeout(ctx)
 	defer cancel()
 
 	query := r.DB.Rebind(sql)
@@ -67,7 +67,7 @@ func (r *publisherRepo) Get(ctx context.Context, id uint64) (publisher *models.P
 		where 
 			id = ? and deleted_at is null;`
 
-	ctx, cancel := timeoutCtx(ctx)
+	ctx, cancel := dbtk.withTimeout(ctx)
 	defer cancel()
 
 	query := r.DB.Rebind(sql)
@@ -83,7 +83,7 @@ func (r *publisherRepo) Get(ctx context.Context, id uint64) (publisher *models.P
 func (r *publisherRepo) List(ctx context.Context) (list []*models.Publisher, err error) {
 	sql := `select * from publisher where deleted_at is null;`
 
-	ctx, cancel := timeoutCtx(ctx)
+	ctx, cancel := dbtk.withTimeout(ctx)
 	defer cancel()
 
 	query := r.DB.Rebind(sql)
@@ -97,7 +97,7 @@ func (r *publisherRepo) List(ctx context.Context) (list []*models.Publisher, err
 func (r *publisherRepo) Delete(ctx context.Context, id uint64) error {
 	sql := `update publisher set deleted_at = now() where id = ?;`
 
-	ctx, cancel := timeoutCtx(ctx)
+	ctx, cancel := dbtk.withTimeout(ctx)
 	defer cancel()
 
 	query := r.DB.Rebind(sql)

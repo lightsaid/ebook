@@ -33,10 +33,10 @@ func (r *categoryRepo) Create(ctx context.Context, category models.Category) (ui
 	// sql := `insert category set category_name=?, icon=?, sort=?;`
 	sql := `insert into category(category_name, icon, sort) values (:category_name, :icon, :sort);`
 
-	ctx, cancal := timeoutCtx(ctx)
+	ctx, cancal := dbtk.withTimeout(ctx)
 	defer cancal()
 
-	query, args, err := debugSQL(ctx, r.DB, sql, category)
+	query, args, err := dbtk.debugSQL(ctx, r.DB, sql, category)
 	if err != nil {
 		return 0, err
 	}
@@ -48,10 +48,10 @@ func (r *categoryRepo) Create(ctx context.Context, category models.Category) (ui
 func (r *categoryRepo) Update(ctx context.Context, category models.Category) error {
 	sql := `update category set category_name=:category_name, icon=:icon, sort=:sort where id=:id and deleted_at is null;`
 
-	ctx, cancal := timeoutCtx(ctx)
+	ctx, cancal := dbtk.withTimeout(ctx)
 	defer cancal()
 
-	query, args, err := debugSQL(ctx, r.DB, sql, category)
+	query, args, err := dbtk.debugSQL(ctx, r.DB, sql, category)
 	if err != nil {
 		return err
 	}
@@ -73,7 +73,7 @@ func (r *categoryRepo) Get(ctx context.Context, id uint64) (*models.Category, er
 		where 
 			id=? and deleted_at is null;`
 
-	ctx, cancal := timeoutCtx(ctx)
+	ctx, cancal := dbtk.withTimeout(ctx)
 	defer cancal()
 
 	sql = r.DB.Rebind(sql)
@@ -90,7 +90,7 @@ func (r *categoryRepo) Get(ctx context.Context, id uint64) (*models.Category, er
 func (r *categoryRepo) List(ctx context.Context) (list []*models.Category, err error) {
 	sql := `select * from category where deleted_at is null;`
 
-	ctx, cancel := timeoutCtx(ctx)
+	ctx, cancel := dbtk.withTimeout(ctx)
 	defer cancel()
 
 	sql = r.DB.Rebind(sql)

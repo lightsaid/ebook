@@ -307,3 +307,11 @@ func TestListByPublisher(t *testing.T) {
 
 	fmt.Println(string(by))
 }
+
+func TestListShoppingCart(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*5)
+	defer cancel()
+	data, err := tRepo.ShoppingCartRepo.List(ctx, 1, dbrepo.Filters{})
+	require.NoError(t, err)
+	fmt.Println(data)
+}

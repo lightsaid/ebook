@@ -13,6 +13,7 @@ import (
 )
 
 type BookRepo interface {
+	baseRepo
 	Create(ctx context.Context, book *models.Book) (uint64, error)
 	CreateTx(ctx context.Context, book *models.Book) (uint64, error)
 	Get(ctx context.Context, id uint64) (*models.Book, error)
@@ -82,7 +83,7 @@ func (r *bookRepo) Create(ctx context.Context, book *models.Book) (uint64, error
 		description=:description
 	`
 
-	ctx, cancel := timeoutCtx(ctx)
+	ctx, cancel := dbtk.withTimeout(ctx)
 	defer cancel()
 
 	args := bookFieldToSQLArgs(book)
@@ -95,7 +96,7 @@ func (r *bookRepo) Create(ctx context.Context, book *models.Book) (uint64, error
 
 // CreateTx
 func (r *bookRepo) CreateTx(ctx context.Context, book *models.Book) (uint64, error) {
-	ctx, cancel := timeoutCtx(ctx)
+	ctx, cancel := dbtk.withTimeout(ctx)
 	defer cancel()
 
 	// 不存在分类
@@ -104,7 +105,7 @@ func (r *bookRepo) CreateTx(ctx context.Context, book *models.Book) (uint64, err
 	}
 	var bookID uint64
 	// 存在分类
-	err := execTx(ctx, r.DB, func(r Repository) error {
+	err := dbtk.execTx(ctx, r.DB, func(r Repository) error {
 		var err error
 		bookID, err = r.BookRepo.Create(ctx, book)
 		if err != nil {
@@ -163,7 +164,7 @@ func (r *bookRepo) Get(ctx context.Context, id uint64) (book *models.Book, err e
 	book = new(models.Book)
 	queryBook := new(models.SQLBoook)
 
-	ctx, cancel := timeoutCtx(ctx)
+	ctx, cancel := dbtk.withTimeout(ctx)
 	defer cancel()
 
 	slog.InfoContext(ctx, sql, "id", slog.Int64Value(int64(id)))
@@ -216,7 +217,7 @@ func (r *bookRepo) Update(ctx context.Context, book *models.Book) error {
 		description=:description
 	where id=:id and deleted_at is null;
 	`
-	ctx, cancel := timeoutCtx(ctx)
+	ctx, cancel := dbtk.withTimeout(ctx)
 	defer cancel()
 	args := bookFieldToSQLArgs(book)
 
@@ -232,7 +233,7 @@ func (r *bookRepo) Update(ctx context.Context, book *models.Book) error {
 
 	// query = r.DB.Rebind(query)
 
-	query, argv, err := debugSQL(ctx, r.DB, sql, args)
+	query, argv, err := dbtk.debugSQL(ctx, r.DB, sql, args)
 	if err != nil {
 		slog.ErrorContext(ctx, "bookRepo.Update sqlx.Named falil ", slog.String("err", err.Error()))
 		return err
@@ -243,10 +244,10 @@ func (r *bookRepo) Update(ctx context.Context, book *models.Book) error {
 
 // UpdateTx 通过事务更新图书，同时更新bookCategory表
 func (r *bookRepo) UpdateTx(ctx context.Context, book *models.Book) error {
-	ctx, cancel := timeoutCtx(ctx)
+	ctx, cancel := dbtk.withTimeout(ctx)
 	defer cancel()
 
-	err := execTx(context.Background(), r.DB, func(r Repository) error {
+	err := dbtk.execTx(context.Background(), r.DB, func(r Repository) error {
 		// 更新图书
 		err := r.BookRepo.Update(ctx, book)
 		if err != nil {
@@ -279,7 +280,7 @@ func (r *bookRepo) UpdateTx(ctx context.Context, book *models.Book) error {
 
 // List 分页查询图书，不包括分类信息
 func (r *bookRepo) List(ctx context.Context, f Filters) (*PageQueryVo, error) {
-	ctx, cancel := timeoutCtx(ctx)
+	ctx, cancel := dbtk.withTimeout(ctx)
 	defer cancel()
 
 	// 查询总数
@@ -320,7 +321,7 @@ func (r *bookRepo) List(ctx context.Context, f Filters) (*PageQueryVo, error) {
 	from books b
 	left join author a on a.id=b.author_id
 	left join publisher p on p.id=b.publisher_id
-	where b.deleted_at is null order by %s limit ? offset ?`, f.sortColumnWithDefault())
+	where b.deleted_at is null order by %s limit ? offset ?`, f.sortColumnWithDefault(r))
 
 	query = r.DB.Rebind(query)
 
@@ -352,7 +353,7 @@ func (r *bookRepo) ListByCategory(ctx context.Context, categoryID uint64, f Filt
 	var total int
 	var vo PageQueryVo
 
-	ctx, cancel := timeoutCtx(ctx)
+	ctx, cancel := dbtk.withTimeout(ctx)
 	defer cancel()
 
 	err := r.DB.GetContext(ctx, &total, totalSQL, categoryID)
@@ -381,7 +382,7 @@ func (r *bookRepo) ListByCategory(ctx context.Context, categoryID uint64, f Filt
 		left join author a on a.id = b.author_id
 		left join publisher p on p.id = b.publisher_id
 		where bc.category_id = ? and b.deleted_at is null 
-		order by %s`, f.sortColumnWithDefault())
+		order by %s`, f.sortColumnWithDefault(r))
 
 	query = r.DB.Rebind(query)
 
@@ -463,7 +464,7 @@ func (r *bookRepo) listCategoryByBooks(ctx context.Context, list []*models.Book)
 
 // ListWithCategory 查询图书列表和分类
 func (r *bookRepo) ListWithCategory(ctx context.Context, filter Filters) (*PageQueryVo, error) {
-	ctx, cancel := timeoutCtx(ctx)
+	ctx, cancel := dbtk.withTimeout(ctx)
 	defer cancel()
 
 	vo, err := r.List(ctx, filter)
@@ -554,7 +555,7 @@ func (r *bookRepo) ListByAuthor(ctx context.Context, authorID uint64, f Filters)
 		f.SortSafelist = r.defaultSortSafelist()
 	}
 
-	ctx, cancel := timeoutCtx(ctx)
+	ctx, cancel := dbtk.withTimeout(ctx)
 	defer cancel()
 
 	totalSQL := `select count(*) as total from books b 
@@ -587,7 +588,7 @@ func (r *bookRepo) ListByAuthor(ctx context.Context, authorID uint64, f Filters)
 		left join publisher p on p.id = b.publisher_id
 		where a.id = ? and b.deleted_at is null
 		order by %s limit ? offset ?
-		`, f.sortColumnWithDefault())
+		`, f.sortColumnWithDefault(r))
 
 	query = r.DB.Rebind(query)
 
@@ -613,7 +614,7 @@ func (r *bookRepo) ListByPublisher(ctx context.Context, publisherID uint64, f Fi
 		f.SortSafelist = r.defaultSortSafelist()
 	}
 
-	ctx, cancel := timeoutCtx(ctx)
+	ctx, cancel := dbtk.withTimeout(ctx)
 	defer cancel()
 
 	totalSQL := `select count(*) as total from books b 
@@ -645,7 +646,7 @@ func (r *bookRepo) ListByPublisher(ctx context.Context, publisherID uint64, f Fi
 		left join publisher p on p.id = b.publisher_id
 		where p.id = ? and b.deleted_at is null
 		order by %s limit ? offset ?
-		`, f.sortColumnWithDefault())
+		`, f.sortColumnWithDefault(r))
 
 	query = r.DB.Rebind(query)
 
@@ -665,7 +666,7 @@ func (r *bookRepo) ListByPublisher(ctx context.Context, publisherID uint64, f Fi
 
 func (r *bookRepo) Delete(ctx context.Context, id uint64) error {
 	sql := `update books set deleted_at=now() where id=?`
-	ctx, cancel := timeoutCtx(ctx)
+	ctx, cancel := dbtk.withTimeout(ctx)
 	defer cancel()
 
 	query := r.DB.Rebind(sql)

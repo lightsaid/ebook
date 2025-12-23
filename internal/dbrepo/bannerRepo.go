@@ -32,10 +32,10 @@ func (r *bannerRepo) Create(ctx context.Context, banner *models.Banner) (uint64,
 	query := `insert into banners(slogan,link_type,link_url,image_url,enable,sort)
 		values(:slogan, :link_type, :link_url, :image_url, :enable, :sort)`
 
-	ctx, cancel := timeoutCtx(ctx)
+	ctx, cancel := dbtk.withTimeout(ctx)
 	defer cancel()
 
-	query, args, err := debugSQL(ctx, r.DB, query, banner)
+	query, args, err := dbtk.debugSQL(ctx, r.DB, query, banner)
 	if err != nil {
 		return 0, err
 	}
@@ -52,10 +52,10 @@ func (r *bannerRepo) Update(ctx context.Context, banner *models.Banner) error {
 	enable=:enable, sort=:sort
 	where id=:id and deleted_at is null;`
 
-	ctx, cancel := timeoutCtx(ctx)
+	ctx, cancel := dbtk.withTimeout(ctx)
 	defer cancel()
 
-	query, args, err := debugSQL(ctx, r.DB, query, banner)
+	query, args, err := dbtk.debugSQL(ctx, r.DB, query, banner)
 	if err != nil {
 		return err
 	}
@@ -68,7 +68,7 @@ func (r *bannerRepo) Update(ctx context.Context, banner *models.Banner) error {
 func (r *bannerRepo) Get(ctx context.Context, id uint64) (banners *models.Banner, err error) {
 	sql := `select * from banners where id = ? and deleted_at is null;`
 
-	ctx, cancel := timeoutCtx(ctx)
+	ctx, cancel := dbtk.withTimeout(ctx)
 	defer cancel()
 
 	query := r.DB.Rebind(sql)
@@ -82,7 +82,7 @@ func (r *bannerRepo) Get(ctx context.Context, id uint64) (banners *models.Banner
 func (r *bannerRepo) List(ctx context.Context) (list []*models.Banner, err error) {
 	sql := `select * from banners where deleted_at is null;`
 
-	ctx, cancel := timeoutCtx(ctx)
+	ctx, cancel := dbtk.withTimeout(ctx)
 	defer cancel()
 
 	query := r.DB.Rebind(sql)
@@ -96,7 +96,7 @@ func (r *bannerRepo) List(ctx context.Context) (list []*models.Banner, err error
 func (r *bannerRepo) Delete(ctx context.Context, id uint64) error {
 	sql := `update banners set deleted_at = now() where id = ?;`
 
-	ctx, cancel := timeoutCtx(ctx)
+	ctx, cancel := dbtk.withTimeout(ctx)
 	defer cancel()
 
 	query := r.DB.Rebind(sql)

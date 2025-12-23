@@ -9,6 +9,7 @@ import (
 )
 
 type AuthorRepo interface {
+	baseRepo
 	Create(ctx context.Context, authorName string) (uint64, error)
 	Update(ctx context.Context, id uint64, authorName string) error
 	Get(ctx context.Context, id uint64) (*models.Author, error)
@@ -32,10 +33,10 @@ func NewAuthorRepo(db Queryable) *authorRepo {
 func (r *authorRepo) Create(ctx context.Context, authorName string) (uint64, error) {
 	sql := `insert author(author_name) values(:author_name);`
 
-	ctx, cancal := timeoutCtx(ctx)
+	ctx, cancal := dbtk.withTimeout(ctx)
 	defer cancal()
 
-	query, args, err := debugSQL(ctx, r.DB, sql, envelop{"author_name": authorName})
+	query, args, err := dbtk.debugSQL(ctx, r.DB, sql, envelop{"author_name": authorName})
 	if err != nil {
 		return 0, err
 	}
@@ -47,10 +48,10 @@ func (r *authorRepo) Create(ctx context.Context, authorName string) (uint64, err
 func (r *authorRepo) Update(ctx context.Context, id uint64, authorName string) error {
 	sql := `update author set author_name=:author_name where id=:id and deleted_at is null;`
 
-	ctx, cancal := timeoutCtx(ctx)
+	ctx, cancal := dbtk.withTimeout(ctx)
 	defer cancal()
 
-	query, args, err := debugSQL(
+	query, args, err := dbtk.debugSQL(
 		ctx, r.DB, sql,
 		envelop{"author_name": authorName, "id": id},
 	)
@@ -72,7 +73,7 @@ func (r *authorRepo) Get(ctx context.Context, id uint64) (author *models.Author,
 			id=? and deleted_at is null;`
 	author = new(models.Author)
 
-	ctx, cancal := timeoutCtx(ctx)
+	ctx, cancal := dbtk.withTimeout(ctx)
 	defer cancal()
 
 	slog.InfoContext(ctx, sql, slog.Int64("id", int64(id)))
@@ -88,7 +89,7 @@ func (r *authorRepo) List(ctx context.Context, f Filters) (*PageQueryVo, error) 
 		f.SortSafelist = r.defaultSortSafelist()
 	}
 
-	sortFields := f.sortColumn()
+	sortFields := f.sortColumn(r)
 
 	// 提供默认
 	if sortFields == "" {
@@ -104,7 +105,7 @@ func (r *authorRepo) List(ctx context.Context, f Filters) (*PageQueryVo, error) 
 		 limit ? offset ?`, sortFields,
 	)
 
-	ctx, cancal := timeoutCtx(ctx)
+	ctx, cancal := dbtk.withTimeout(ctx)
 	defer cancal()
 
 	query := r.DB.Rebind(sql)
@@ -149,7 +150,7 @@ func (r *authorRepo) List(ctx context.Context, f Filters) (*PageQueryVo, error) 
 func (r *authorRepo) Delete(ctx context.Context, id uint64) error {
 	sql := `update author set deleted_at = now() where id = ?;`
 
-	ctx, cancal := timeoutCtx(ctx)
+	ctx, cancal := dbtk.withTimeout(ctx)
 	defer cancal()
 
 	slog.InfoContext(ctx, sql, slog.Int64("id", int64(id)))

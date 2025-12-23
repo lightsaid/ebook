@@ -14,6 +14,16 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+var (
+	Db *sqlx.DB
+	// rex = regexp.MustCompile(`[\t \n]`)
+	spaceRex = regexp.MustCompile(`\s+`)
+
+	// 内部使用的工具,提取出来，方便使用，不用记忆多个工具函数名字
+	// 通过 dbtk. 智能提示即可
+	dbtk = toolkit{}
+)
+
 type envelop map[string]any
 
 // Queryable提取sql.DB和sql.Tx公共的方法当作一个接口,
@@ -46,12 +56,6 @@ type Queryable interface {
 	Select(dest interface{}, query string, args ...interface{}) error
 	SelectContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error
 }
-
-var (
-	Db *sqlx.DB
-	// rex = regexp.MustCompile(`[\t \n]`)
-	spaceRex = regexp.MustCompile(`\s+`)
-)
 
 func Open() (*sqlx.DB, error) {
 	dsn := fmt.Sprintf(
@@ -87,10 +91,18 @@ func Close() {
 	}
 }
 
+// defaultSortSafelist 导出默认的安全排序字段
+type baseRepo interface {
+	defaultSortSafelist() []string
+}
+
+// 内部使用的工具箱 toolkit
+type toolkit struct{}
+
 // debugSQL 使用sqlx.Named 和 db.Rebind 处理sql并输出sql日志
 //
 // arg 必须为结构体或者map，struct(带db tag)
-func debugSQL(ctx context.Context, db Queryable, sql string, arg any) (string, []any, error) {
+func (*toolkit) debugSQL(ctx context.Context, db Queryable, sql string, arg any) (string, []any, error) {
 	// 使用 sqlx.Named 把 :param 转换成统一 ? 占位符，并生成 args
 	query, args, err := sqlx.Named(sql, arg)
 	if err != nil {
@@ -112,7 +124,7 @@ func debugSQL(ctx context.Context, db Queryable, sql string, arg any) (string, [
 }
 
 // execTx 执行事务公共方法
-func execTx(ctx context.Context, query Queryable, fn func(Repository) error) error {
+func (*toolkit) execTx(ctx context.Context, query Queryable, fn func(Repository) error) error {
 	db, ok := query.(*sqlx.DB)
 	if !ok {
 		return errors.New("`query Queryable` is not sqlx.DB")
@@ -133,12 +145,12 @@ func execTx(ctx context.Context, query Queryable, fn func(Repository) error) err
 	return tx.Commit()
 }
 
-// timeoutCtx 设置超时，并返回新的context
-func timeoutCtx(ctx context.Context) (context.Context, context.CancelFunc) {
-	// TODO: 使用配置
+// withTimeout 设置超时，并返回新的context
+func (*toolkit) withTimeout(ctx context.Context) (context.Context, context.CancelFunc) {
 	return context.WithTimeout(ctx, 5*time.Second)
 }
 
-func makeCtx() (context.Context, context.CancelFunc) {
+// makeWithTimeout 创建一个超时上下文
+func (*toolkit) makeWithTimeout() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), 5*time.Second)
 }

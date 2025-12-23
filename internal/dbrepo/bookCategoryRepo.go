@@ -34,7 +34,7 @@ func NewBookCategoryRepo(db Queryable) *bookCategoryRepo {
 func (r *bookCategoryRepo) Create(ctx context.Context, bc models.BookCategory) (uint64, error) {
 	sql := r.DB.Rebind(`insert book_categories set book_id=?, category_id=?`)
 
-	ctx, cancel := timeoutCtx(ctx)
+	ctx, cancel := dbtk.withTimeout(ctx)
 	defer cancel()
 
 	slog.DebugContext(
@@ -61,7 +61,7 @@ func (r *bookCategoryRepo) BatchInsert(ctx context.Context, list []models.BookCa
 	}
 	sql += strings.Join(parts, ",")
 
-	ctx, cancel := timeoutCtx(ctx)
+	ctx, cancel := dbtk.withTimeout(ctx)
 	defer cancel()
 
 	query := r.DB.Rebind(sql)
@@ -77,7 +77,7 @@ func (r *bookCategoryRepo) BatchInsert(ctx context.Context, list []models.BookCa
 func (r *bookCategoryRepo) ListByBookID(ctx context.Context, bookID uint64) (list []*models.BookCategory, err error) {
 	sql := r.DB.Rebind(`select * from book_categories where book_id=?`)
 
-	ctx, cancel := timeoutCtx(ctx)
+	ctx, cancel := dbtk.withTimeout(ctx)
 	defer cancel()
 
 	slog.InfoContext(ctx, sql, "book_id", slog.Int64Value(int64(bookID)))
@@ -89,7 +89,7 @@ func (r *bookCategoryRepo) ListByBookID(ctx context.Context, bookID uint64) (lis
 func (r *bookCategoryRepo) ListByCategoryID(ctx context.Context, categoryID uint64) (list []*models.BookCategory, err error) {
 	sql := r.DB.Rebind(`select * from book_categories where category_id=?`)
 
-	ctx, cancel := timeoutCtx(ctx)
+	ctx, cancel := dbtk.withTimeout(ctx)
 	defer cancel()
 
 	slog.InfoContext(ctx, sql, "category_id", slog.Int64Value(int64(categoryID)))
@@ -101,7 +101,7 @@ func (r *bookCategoryRepo) ListByCategoryID(ctx context.Context, categoryID uint
 func (r *bookCategoryRepo) DeleteByBookID(ctx context.Context, bookID uint64) error {
 	sql := r.DB.Rebind(`delete from book_categories where book_id=?`)
 
-	ctx, cancel := timeoutCtx(ctx)
+	ctx, cancel := dbtk.withTimeout(ctx)
 	defer cancel()
 
 	slog.InfoContext(ctx, sql, "book_id", slog.Int64Value(int64(bookID)))
@@ -113,7 +113,7 @@ func (r *bookCategoryRepo) DeleteByBookID(ctx context.Context, bookID uint64) er
 func (r *bookCategoryRepo) DeleteByCategoryID(ctx context.Context, categoryID uint64) error {
 	sql := r.DB.Rebind(`delete from book_categories where category_id=?`)
 
-	ctx, cancel := timeoutCtx(ctx)
+	ctx, cancel := dbtk.withTimeout(ctx)
 	defer cancel()
 
 	slog.InfoContext(ctx, sql, "category_id", slog.Int64Value(int64(categoryID)))

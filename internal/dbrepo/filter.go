@@ -28,7 +28,11 @@ type Filters struct {
 //
 // sortColumn 获取安全的排序字段，有"-"就去掉,返回一个string数组：
 // ['created_at DESC', 'id ASC']
-func (f Filters) sortColumn() string {
+func (f Filters) sortColumn(br baseRepo) string {
+	if len(f.SortSafelist) == 0 {
+		f.SortSafelist = br.defaultSortSafelist()
+	}
+
 	sorts := make([]string, 0, len(f.SortFields))
 
 	for _, field := range f.SortFields {
@@ -43,8 +47,8 @@ func (f Filters) sortColumn() string {
 }
 
 // sortColumnWithDefault 默认值为 "id ASC" 的 sortColumn 方法
-func (f Filters) sortColumnWithDefault() string {
-	sortText := f.sortColumn()
+func (f Filters) sortColumnWithDefault(br baseRepo) string {
+	sortText := f.sortColumn(br)
 	if sortText == "" {
 		return " id ASC "
 	}

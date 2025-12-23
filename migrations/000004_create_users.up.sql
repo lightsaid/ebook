@@ -1,15 +1,17 @@
 CREATE TABLE IF NOT EXISTS `users` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '自增id',
   `email` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '邮箱',
+  `password` VARCHAR(80) NOT NULL COMMENT '加密密码',
   `nickname` VARCHAR(64) NOT NULL COMMENT '昵称',
-  `avatar` VARCHAR(255) NOT NULL COMMENT '头像',
-  `role` INT NOT NULL DEFAULT 1 COMMENT '0普通用户 1管理员',
+  `avatar` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '头像',
+  `role` INT NOT NULL DEFAULT 0 COMMENT '0普通用户 1管理员',
   `login_at` TIMESTAMP NULL COMMENT '登录时间',
-  `login_ip` TIMESTAMP NULL COMMENT '登录ip',
+  `login_ip` VARCHAR(45) NULL COMMENT '登录ip',
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `deleted_at` TIMESTAMP NULL COMMENT '删除时间',
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_email` (`email`),
   INDEX `idx_created_at` (`created_at`),
   INDEX `idx_deleted_at` (`deleted_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

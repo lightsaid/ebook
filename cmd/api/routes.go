@@ -70,6 +70,32 @@ func (app *Application) routes() http.Handler {
 		router.Get("/v1/banners", app.ListBannerHandler)
 	}
 
+	{
+		// 用户api
+		router.Post("/v1/user/register", app.UserRegisterHandler)
+		router.Post("/v1/user/login", app.UserLoginHandler)
+		router.Put("/v1/user/update", app.UserUpdateHandler)
+		router.Get("/v1/user/profile", app.GetUserProfile)
+		router.Post("/v1/user/renewToken", app.RenewTokenHandler)
+	}
+
+	{
+		//  订单api
+		router.Post("/v1/order", app.PostOrderHandler)
+		router.Post("/v1/order/pay", app.PayOrderHandler)
+		router.Get("/v1/order/{id:[0-9]+}", app.GetOrderHandler)
+		router.Put("/v1/order/{id:[0-9]+}", app.PutOrderHandler)
+		router.Delete("/v1/order/{id:[0-9]+}", app.DeleteOrderHandler)
+		router.Get("/v1/orders", app.ListOrderHandler)
+	}
+
+	{
+		// 购物车api
+		router.Post("/v1/shopping/cart", app.PostShoppingCartHandler)
+		router.Delete("/v1/shopping/cart/{id:[0-9]+}", app.DeleteShoppingCartHandler)
+		router.Get("/v1/shopping/carts", app.ListShoppingCartHandler)
+	}
+
 	mux := chi.NewRouter()
 	mux.Mount("/api", router)
 
