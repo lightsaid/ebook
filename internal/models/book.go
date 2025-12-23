@@ -34,7 +34,7 @@ type Book struct {
 	Description string       `db:"description" json:"description"`
 	Version     string       `db:"version" json:"version"`
 	CreatedAt   types.GxTime `db:"created_at" json:"createdAt"`
-	UpdatedAt   types.GxTime `db:"updated_at" json:"UpdatedAt"`
+	UpdatedAt   types.GxTime `db:"updated_at" json:"updatedAt"`
 	DeletedAt   *time.Time   `db:"deleted_at" json:"-"`
 
 	Author     *Author     `json:"author"`

@@ -14,7 +14,7 @@ type Category struct {
 	Icon         string       `db:"icon" json:"icon"`
 	Sort         int          `db:"sort" json:"sort"`
 	CreatedAt    types.GxTime `db:"created_at" json:"createdAt"`
-	UpdatedAt    types.GxTime `db:"updated_at" json:"UpdatedAt"`
+	UpdatedAt    types.GxTime `db:"updated_at" json:"updatedAt"`
 	DeletedAt    *time.Time   `db:"deleted_at" json:"-"`
 }
 

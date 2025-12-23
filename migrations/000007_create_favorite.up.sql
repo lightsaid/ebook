@@ -1,0 +1,12 @@
+CREATE TABLE IF NOT EXISTS `favorites` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '自增id',
+  `user_id` BIGINT UNSIGNED NOT NULL COMMENT '用户id',
+  `book_id` BIGINT UNSIGNED NOT NULL COMMENT '图书id',
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  INDEX `idx_user_id` (`user_id`),
+  INDEX `idx_book_id` (`book_id`),
+  FOREIGN KEY (`user_id`) REFERENCES users(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`book_id`) REFERENCES books(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
