@@ -9,7 +9,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/lightsaid/gotk"
 
-	"github.com/lightsaid/ebook/docs"
+	docs "github.com/lightsaid/ebook/docs/api"
 
 	httpSwagger "github.com/swaggo/http-swagger/v2"
 )

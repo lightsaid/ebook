@@ -15,15 +15,8 @@ const (
 	PROD = "prod"
 )
 
-type AppConfig struct {
-	Db
-	Jwt
-}
-
-type Db struct{}
-
-type Jwt struct{}
-
+// Load 加载配置到conf上，filenames 支持多个配置文件，
+// 对应相同字段，以后者为准，解析过程中遇到错误回直接panic，因此可以忽略返回的错误
 func Load(conf any, filenames ...string) error {
 	// 收集解析得配置k:v
 	obj := make(map[string]string)
@@ -55,74 +48,7 @@ func readFile(filename string) (map[string]string, error) {
 	return godotenv.Parse(file)
 }
 
-// func mapToStruct(obj map[string]string, conf any) error {
-// 	var tagName = "env" // 配置字段指定映射的tag
-
-// 	sType := reflect.TypeOf(conf).Elem()
-// 	sValue := reflect.ValueOf(conf).Elem()
-
-// 	for i := 0; i < sType.NumField(); i++ {
-// 		ft := sType.Field(i)
-// 		fv := sValue.Field(i)
-
-// 		// 判断是否是嵌套结构体，进行递归处理
-// 		// 嵌套结构体或结构体指针
-// 		// fv.Type().PkgPath() != "" 仅递归用户自定义 struct
-// 		if fv.Kind() == reflect.Struct && fv.CanSet() && fv.Type().PkgPath() != "" {
-// 			if err := mapToStruct(obj, fv.Addr().Interface()); err != nil {
-// 				return err
-// 			}
-// 			continue
-// 		}
-
-// 		// 嵌套结构体指针
-// 		if (fv.Kind() == reflect.Pointer) && fv.CanSet() {
-// 			// 分配指针
-// 			if fv.IsNil() {
-// 				fv.Send(reflect.New(fv.Type().Elem()))
-// 			}
-
-// 			elem := fv.Elem()
-
-// 			if elem.Kind() == reflect.Struct {
-// 				if err := mapToStruct(obj, elem.Addr().Interface()); err != nil {
-// 					return err
-// 				}
-// 				continue
-// 			}
-
-// 			// 基本类型指针，则继续按基础类型解析
-// 			fv = elem
-// 		}
-
-// 		// 查找obj对应的key
-// 		mapKey := ft.Name
-// 		if key, ok := ft.Tag.Lookup(tagName); ok && strings.Trim(key, "") != "" {
-// 			mapKey = key
-// 		}
-
-// 		// 获取value
-// 		mapVal, ok := obj[mapKey]
-// 		if !ok {
-// 			continue
-// 		}
-
-// 		// 赋值
-// 		handle, ok := defaultBuiltInParsers[fv.Kind()]
-// 		if ok {
-// 			val, err := handle(mapVal)
-// 			if err != nil {
-// 				return err
-// 			}
-// 			fv.Set(reflect.ValueOf(val).Convert(ft.Type))
-// 		}
-// 	}
-
-// 	// TODO: 非内置类型
-
-// 	return nil
-// }
-
+// mapToStruct 将解析得到的配置文件key:value转换为struct
 func mapToStruct(obj map[string]string, conf any) error {
 	sType := reflect.TypeOf(conf).Elem()
 	sValue := reflect.ValueOf(conf).Elem()
@@ -175,6 +101,15 @@ func mapToStruct(obj map[string]string, conf any) error {
 
 		// 如果当前字段没有 env 值，不赋值
 		if !hasValue {
+			continue
+		}
+
+		if handler, ok := customParsers[fv.Type().String()]; ok {
+			raw, err := handler(valStr)
+			if err != nil {
+				return fmt.Errorf("parse %s failed: %w", mapKey, err)
+			}
+			fv.Set(reflect.ValueOf(raw).Convert(fv.Type()))
 			continue
 		}
 

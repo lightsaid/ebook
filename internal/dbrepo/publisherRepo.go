@@ -40,7 +40,7 @@ func (r *publisherRepo) Create(ctx context.Context, name string) (uint64, error)
 
 	result, err := r.DB.ExecContext(ctx, query, name)
 
-	return insertErrorHandler(result, err)
+	return dbtk.insertErrorHandler(ctx, result, err)
 }
 
 func (r *publisherRepo) Update(ctx context.Context, name string) error {
@@ -55,7 +55,7 @@ func (r *publisherRepo) Update(ctx context.Context, name string) error {
 
 	result, err := r.DB.ExecContext(ctx, query, name)
 
-	return updateErrorHandler(result, err)
+	return dbtk.updateErrorHandler(ctx, result, err)
 }
 
 func (r *publisherRepo) Get(ctx context.Context, id uint64) (publisher *models.Publisher, err error) {
@@ -105,5 +105,5 @@ func (r *publisherRepo) Delete(ctx context.Context, id uint64) error {
 	slog.DebugContext(ctx, query, slog.Int64("id", int64(id)))
 
 	result, err := r.DB.ExecContext(ctx, query, id)
-	return updateErrorHandler(result, err)
+	return dbtk.updateErrorHandler(ctx, result, err)
 }

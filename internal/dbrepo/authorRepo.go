@@ -42,7 +42,7 @@ func (r *authorRepo) Create(ctx context.Context, authorName string) (uint64, err
 	}
 
 	result, err := r.DB.ExecContext(ctx, query, args...)
-	return insertErrorHandler(result, err)
+	return dbtk.insertErrorHandler(ctx, result, err)
 }
 
 func (r *authorRepo) Update(ctx context.Context, id uint64, authorName string) error {
@@ -60,7 +60,7 @@ func (r *authorRepo) Update(ctx context.Context, id uint64, authorName string) e
 	}
 
 	result, err := r.DB.ExecContext(ctx, query, args...)
-	return updateErrorHandler(result, err)
+	return dbtk.updateErrorHandler(ctx, result, err)
 }
 
 func (r *authorRepo) Get(ctx context.Context, id uint64) (author *models.Author, err error) {
@@ -138,10 +138,10 @@ func (r *authorRepo) List(ctx context.Context, f Filters) (*PageQueryVo, error) 
 
 	var metadata Metadata
 	if len(arr) > 0 {
-		metadata = calculateMetadata(arr[0].Total, f.PageNum, f.PageSize)
+		metadata = dbtk.calculateMetadata(arr[0].Total, f.PageNum, f.PageSize)
 	}
 
-	vo := makePageQueryVo(metadata, list)
+	vo := dbtk.makePageQueryVo(metadata, list)
 
 	return vo, err
 }
@@ -156,7 +156,7 @@ func (r *authorRepo) Delete(ctx context.Context, id uint64) error {
 	slog.InfoContext(ctx, sql, slog.Int64("id", int64(id)))
 
 	result, err := r.DB.ExecContext(ctx, sql, id)
-	return updateErrorHandler(result, err)
+	return dbtk.updateErrorHandler(ctx, result, err)
 }
 
 // defaultSortSafelist 导出默认的安全排序字段

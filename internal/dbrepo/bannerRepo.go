@@ -42,7 +42,7 @@ func (r *bannerRepo) Create(ctx context.Context, banner *models.Banner) (uint64,
 
 	result, err := r.DB.ExecContext(ctx, query, args...)
 
-	return insertErrorHandler(result, err)
+	return dbtk.insertErrorHandler(ctx, result, err)
 }
 
 func (r *bannerRepo) Update(ctx context.Context, banner *models.Banner) error {
@@ -62,7 +62,7 @@ func (r *bannerRepo) Update(ctx context.Context, banner *models.Banner) error {
 
 	result, err := r.DB.ExecContext(ctx, query, args...)
 
-	return updateErrorHandler(result, err)
+	return dbtk.updateErrorHandler(ctx, result, err)
 }
 
 func (r *bannerRepo) Get(ctx context.Context, id uint64) (banners *models.Banner, err error) {
@@ -104,5 +104,5 @@ func (r *bannerRepo) Delete(ctx context.Context, id uint64) error {
 	slog.DebugContext(ctx, query, slog.Int64("id", int64(id)))
 
 	result, err := r.DB.ExecContext(ctx, query, id)
-	return updateErrorHandler(result, err)
+	return dbtk.updateErrorHandler(ctx, result, err)
 }

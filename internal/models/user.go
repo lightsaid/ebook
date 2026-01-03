@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/lightsaid/ebook/internal/types"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
@@ -18,4 +19,23 @@ type User struct {
 	CreatedAt types.GxTime  `db:"created_at" json:"createdAt"`
 	UpdatedAt types.GxTime  `db:"updated_at" json:"updatedAt"`
 	DeletedAt *time.Time    `db:"deleted_at" json:"-"`
+}
+
+func (u *User) SetHashPassword() error {
+	hash, err := bcrypt.GenerateFromPassword([]byte(u.Password), 12)
+	if err != nil {
+		return err
+	}
+
+	u.Password = string(hash)
+	return nil
+}
+
+func (u *User) MatchesPassword(plaintext string) error {
+	err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(plaintext))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

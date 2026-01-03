@@ -2,57 +2,63 @@ package main
 
 import (
 	"context"
-	"encoding/json"
+	"database/sql"
+	"errors"
 	"fmt"
-	"log"
-	"math/rand"
-	"time"
 
+	"github.com/lightsaid/ebook/internal/config"
 	"github.com/lightsaid/ebook/internal/dbrepo"
+	"github.com/lightsaid/ebook/internal/models"
 )
 
-var repo dbrepo.Repository
+var store dbrepo.Repository
 
 func main() {
-	db, err := dbrepo.Open()
+	var conf config.DbConfig
+	config.Load(&conf, "./configs/develop.env")
+	db, err := dbrepo.Open(conf)
 	if err != nil {
 		panic(err)
 	}
 
-	repo = dbrepo.NewRepository(db)
-	id := createAuthor()
-	getAuthor(id)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-	list, err := repo.AuthorRepo.List(ctx, dbrepo.Filters{})
-	if err != nil {
-		log.Println("repo.AuthorRepo.List error: ", err)
-	}
-	str, _ := json.MarshalIndent(list, "", "\t")
-	fmt.Println(string(str))
+	store = dbrepo.NewRepository(db)
+	createUser()
 }
 
-func createAuthor() uint64 {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-	src := rand.NewSource(time.Now().UnixMicro())
+func createUser() {
+	var email = "lightsaid@foxmail.com"
+	_, err := store.UserRepo.GetByUqField(context.TODO(), dbrepo.UserUq{Email: email})
+	if errors.Is(err, sql.ErrNoRows) {
+		user := models.User{
+			Nickname: "lightsaid",
+			Email:    email,
+			Password: "123456",
+			Avatar:   "http://",
+		}
 
-	randNumber := rand.New(src).Intn(2000)
-	id, err := repo.AuthorRepo.Create(ctx, fmt.Sprintf("法外狂徒张三-%d", randNumber))
-	if err != nil {
-		log.Println("createAuthor: ", err)
+		if err := user.SetHashPassword(); err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		newID, err := store.UserRepo.Create(context.TODO(), &user)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		updateUser, err := store.UserRepo.Get(context.TODO(), newID)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		updateUser.Role = 1
+
+		err = store.UserRepo.Update(context.TODO(), updateUser)
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
-	fmt.Println("createAuthor id: ", id)
-	return id
-}
 
-func getAuthor(id uint64) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-
-	author, err := repo.AuthorRepo.Get(ctx, id)
-	if err != nil {
-		log.Println("getAuthor error: ", err)
-	}
-	fmt.Println("getAuthor succ: ", author)
 }

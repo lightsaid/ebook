@@ -43,7 +43,8 @@ func (r *shoppingCartRepo) Create(ctx context.Context, data *models.ShoppingCart
 	}
 	defer stmt.Close()
 
-	return insertErrorHandler(stmt.ExecContext(ctx, args...))
+	result, err := stmt.ExecContext(ctx, args...)
+	return dbtk.insertErrorHandler(ctx, result, err)
 }
 
 func (r *shoppingCartRepo) Delete(ctx context.Context, shoppingId uint64) error {
@@ -51,7 +52,8 @@ func (r *shoppingCartRepo) Delete(ctx context.Context, shoppingId uint64) error 
 	ctx, cancel := dbtk.withTimeout(ctx)
 	defer cancel()
 
-	return updateErrorHandler(r.DB.ExecContext(ctx, query, shoppingId))
+	result, err := r.DB.ExecContext(ctx, query, shoppingId)
+	return dbtk.updateErrorHandler(ctx, result, err)
 }
 
 func (r *shoppingCartRepo) List(ctx context.Context, userId uint64, f Filters) (*PageQueryVo, error) {
@@ -80,8 +82,8 @@ func (r *shoppingCartRepo) List(ctx context.Context, userId uint64, f Filters) (
 	var list = make([]*models.SQLShoppingCart, 0, f.PageSize)
 	stmt.SelectContext(ctx, &list, userId, f.limit(), f.offset())
 
-	metadata := calculateMetadata(total, f.PageNum, f.PageSize)
-	vo := makePageQueryVo(metadata, list)
+	metadata := dbtk.calculateMetadata(total, f.PageNum, f.PageSize)
+	vo := dbtk.makePageQueryVo(metadata, list)
 
 	return vo, nil
 }

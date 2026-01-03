@@ -1,21 +1,8 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "EBook API",
-        "title": "EBook API",
-        "termsOfService": "http://swagger.io/terms/",
-        "contact": {
-            "name": "API Support",
-            "url": "http://www.swagger.io/support",
-            "email": "support@swagger.io"
-        },
-        "license": {
-            "name": "Apache 2.0",
-            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
-        },
-        "version": "1.0"
+        "contact": {}
     },
-    "basePath": "/api",
     "paths": {
         "/v1/book": {
             "post": {
@@ -94,9 +81,6 @@
         "models.Book": {
             "type": "object",
             "properties": {
-                "UpdatedAt": {
-                    "$ref": "#/definitions/types.GxTime"
-                },
                 "author": {
                     "$ref": "#/definitions/models.Author"
                 },
@@ -157,6 +141,9 @@
                     "description": "1-电子书,2-实体,3-电子书+实体",
                     "type": "integer"
                 },
+                "updatedAt": {
+                    "$ref": "#/definitions/types.GxTime"
+                },
                 "version": {
                     "type": "string"
                 }
@@ -165,9 +152,6 @@
         "models.Category": {
             "type": "object",
             "properties": {
-                "UpdatedAt": {
-                    "$ref": "#/definitions/types.GxTime"
-                },
                 "categoryName": {
                     "type": "string"
                 },
@@ -182,15 +166,15 @@
                 },
                 "sort": {
                     "type": "integer"
+                },
+                "updatedAt": {
+                    "$ref": "#/definitions/types.GxTime"
                 }
             }
         },
         "models.Publisher": {
             "type": "object",
             "properties": {
-                "UpdatedAt": {
-                    "$ref": "#/definitions/types.GxTime"
-                },
                 "createdAt": {
                     "$ref": "#/definitions/types.GxTime"
                 },
@@ -199,6 +183,9 @@
                 },
                 "publisherName": {
                     "type": "string"
+                },
+                "updatedAt": {
+                    "$ref": "#/definitions/types.GxTime"
                 }
             }
         },

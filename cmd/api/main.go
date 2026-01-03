@@ -1,17 +1,23 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"log/slog"
 	"os"
 
+	"github.com/lightsaid/ebook/internal/config"
 	"github.com/lightsaid/ebook/internal/dbrepo"
+	"github.com/lightsaid/ebook/internal/types"
 	"github.com/lightsaid/ebook/pkg/logger"
 	"github.com/lightsaid/gotk"
 )
 
 type Application struct {
-	Db dbrepo.Repository
+	Db     dbrepo.Repository
+	config struct {
+		config.DbConfig
+	}
 }
 
 type envelope map[string]any
@@ -30,12 +36,17 @@ type envelope map[string]any
 
 // @BasePath /api
 func main() {
+	// 解析命令行参数获取配置文件
+	var envFiles types.ArrayString
+	flag.Var(&envFiles, "env", "配置文件，支持指定多个")
+	flag.Parse()
+
 	app := Application{}
 
 	instance := logger.NewLogger(os.Stdout, "DEBUG", gotk.TextType)
 	slog.SetDefault(instance)
 
-	conn, err := dbrepo.Open()
+	conn, err := dbrepo.Open(app.config.DbConfig)
 	if err != nil {
 		panic(err)
 	}

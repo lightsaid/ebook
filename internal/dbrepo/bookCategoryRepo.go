@@ -45,7 +45,7 @@ func (r *bookCategoryRepo) Create(ctx context.Context, bc models.BookCategory) (
 	)
 
 	result, err := r.DB.ExecContext(ctx, sql, bc.BookID, bc.CategoryID)
-	return insertErrorHandler(result, err)
+	return dbtk.insertErrorHandler(ctx, result, err)
 }
 
 func (r *bookCategoryRepo) BatchInsert(ctx context.Context, list []models.BookCategory) error {
@@ -67,11 +67,10 @@ func (r *bookCategoryRepo) BatchInsert(ctx context.Context, list []models.BookCa
 	query := r.DB.Rebind(sql)
 	slog.InfoContext(ctx, spaceRex.ReplaceAllString(query, " "), "args", slog.AnyValue(args))
 
-	// NOTE: 这里只会返回影响行数，因此不能使用 insertErrorHandler
-	// _, err := insertErrorHandler(r.DB.ExecContext(ctx, sql, args...))
-
-	err := updateErrorHandler(r.DB.ExecContext(ctx, query, args...))
-	return err
+	// NOTE: 这里只会返回影响行数，因此不能使用 dbtk.insertErrorHandler
+	// _, err := dbtk.insertErrorHandler(r.DB.ExecContext(ctx, sql, args...))
+	result, err := r.DB.ExecContext(ctx, query, args...)
+	return dbtk.updateErrorHandler(ctx, result, err)
 }
 
 func (r *bookCategoryRepo) ListByBookID(ctx context.Context, bookID uint64) (list []*models.BookCategory, err error) {
@@ -107,7 +106,7 @@ func (r *bookCategoryRepo) DeleteByBookID(ctx context.Context, bookID uint64) er
 	slog.InfoContext(ctx, sql, "book_id", slog.Int64Value(int64(bookID)))
 
 	result, err := r.DB.ExecContext(ctx, sql, bookID)
-	return updateErrorHandler(result, err)
+	return dbtk.updateErrorHandler(ctx, result, err)
 }
 
 func (r *bookCategoryRepo) DeleteByCategoryID(ctx context.Context, categoryID uint64) error {
@@ -119,5 +118,5 @@ func (r *bookCategoryRepo) DeleteByCategoryID(ctx context.Context, categoryID ui
 	slog.InfoContext(ctx, sql, "category_id", slog.Int64Value(int64(categoryID)))
 
 	result, err := r.DB.ExecContext(ctx, sql, categoryID)
-	return updateErrorHandler(result, err)
+	return dbtk.updateErrorHandler(ctx, result, err)
 }

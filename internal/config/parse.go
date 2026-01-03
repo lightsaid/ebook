@@ -3,61 +3,68 @@ package config
 import (
 	"reflect"
 	"strconv"
+	"time"
 )
 
 type ParserFunc = func(v string) (any, error)
 
 var defaultBuiltInParsers = map[reflect.Kind]ParserFunc{
-	reflect.Bool: func(v string) (interface{}, error) {
+	reflect.Bool: func(v string) (any, error) {
 		return strconv.ParseBool(v)
 	},
-	reflect.String: func(v string) (interface{}, error) {
+	reflect.String: func(v string) (any, error) {
 		return v, nil
 	},
-	reflect.Int: func(v string) (interface{}, error) {
+	reflect.Int: func(v string) (any, error) {
 		i, err := strconv.ParseInt(v, 10, 32)
 		return int(i), err
 	},
-	reflect.Int16: func(v string) (interface{}, error) {
+	reflect.Int16: func(v string) (any, error) {
 		i, err := strconv.ParseInt(v, 10, 16)
 		return int16(i), err
 	},
-	reflect.Int32: func(v string) (interface{}, error) {
+	reflect.Int32: func(v string) (any, error) {
 		i, err := strconv.ParseInt(v, 10, 32)
 		return int32(i), err
 	},
-	reflect.Int64: func(v string) (interface{}, error) {
+	reflect.Int64: func(v string) (any, error) {
 		return strconv.ParseInt(v, 10, 64)
 	},
-	reflect.Int8: func(v string) (interface{}, error) {
+	reflect.Int8: func(v string) (any, error) {
 		i, err := strconv.ParseInt(v, 10, 8)
 		return int8(i), err
 	},
-	reflect.Uint: func(v string) (interface{}, error) {
+	reflect.Uint: func(v string) (any, error) {
 		i, err := strconv.ParseUint(v, 10, 32)
 		return uint(i), err
 	},
-	reflect.Uint16: func(v string) (interface{}, error) {
+	reflect.Uint16: func(v string) (any, error) {
 		i, err := strconv.ParseUint(v, 10, 16)
 		return uint16(i), err
 	},
-	reflect.Uint32: func(v string) (interface{}, error) {
+	reflect.Uint32: func(v string) (any, error) {
 		i, err := strconv.ParseUint(v, 10, 32)
 		return uint32(i), err
 	},
-	reflect.Uint64: func(v string) (interface{}, error) {
+	reflect.Uint64: func(v string) (any, error) {
 		i, err := strconv.ParseUint(v, 10, 64)
 		return i, err
 	},
-	reflect.Uint8: func(v string) (interface{}, error) {
+	reflect.Uint8: func(v string) (any, error) {
 		i, err := strconv.ParseUint(v, 10, 8)
 		return uint8(i), err
 	},
-	reflect.Float64: func(v string) (interface{}, error) {
+	reflect.Float64: func(v string) (any, error) {
 		return strconv.ParseFloat(v, 64)
 	},
-	reflect.Float32: func(v string) (interface{}, error) {
+	reflect.Float32: func(v string) (any, error) {
 		f, err := strconv.ParseFloat(v, 32)
 		return float32(f), err
+	},
+}
+
+var customParsers = map[string]ParserFunc{
+	"time.Duration": func(v string) (any, error) {
+		return time.ParseDuration(v)
 	},
 }

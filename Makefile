@@ -54,5 +54,11 @@ seed:
 api:
 	go run ./cmd/api/*.go
 
-swag:
-	swag init -g cmd/api/main.go -o ./docs
+crm:
+	go run ./cmd/crm/*.go -env "./configs/develop.env" -env "./configs/crm.develop.env"
+
+swag/api:
+	swag init -g cmd/api/main.go -o ./docs/api
+
+swag/crm:
+	swag init -g cmd/crm/main.go -o ./docs/crm

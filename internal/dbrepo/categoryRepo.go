@@ -42,7 +42,7 @@ func (r *categoryRepo) Create(ctx context.Context, category models.Category) (ui
 	}
 	result, err := r.DB.ExecContext(ctx, query, args...)
 
-	return insertErrorHandler(result, err)
+	return dbtk.insertErrorHandler(ctx, result, err)
 }
 
 func (r *categoryRepo) Update(ctx context.Context, category models.Category) error {
@@ -61,7 +61,7 @@ func (r *categoryRepo) Update(ctx context.Context, category models.Category) err
 		query,
 		args...,
 	)
-	return updateErrorHandler(result, err)
+	return dbtk.updateErrorHandler(ctx, result, err)
 }
 
 func (r *categoryRepo) Get(ctx context.Context, id uint64) (*models.Category, error) {
@@ -110,5 +110,5 @@ func (r *categoryRepo) Delete(ctx context.Context, id uint64) error {
 
 	result, err := r.DB.Exec(sql, id)
 
-	return updateErrorHandler(result, err)
+	return dbtk.updateErrorHandler(ctx, result, err)
 }

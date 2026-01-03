@@ -91,7 +91,7 @@ func (r *bookRepo) Create(ctx context.Context, book *models.Book) (uint64, error
 	slog.InfoContext(ctx, spaceRex.ReplaceAllString(sql, " "), "args", slog.AnyValue(args))
 
 	result, err := r.DB.NamedExecContext(ctx, sql, args)
-	return insertErrorHandler(result, err)
+	return dbtk.insertErrorHandler(ctx, result, err)
 }
 
 // CreateTx
@@ -222,7 +222,7 @@ func (r *bookRepo) Update(ctx context.Context, book *models.Book) error {
 	args := bookFieldToSQLArgs(book)
 
 	// NOTE: 方式1:
-	// return updateErrorHandler(r.DB.NamedExecContext(ctx, query, args))
+	// return dbtk.updateErrorHandler(r.DB.NamedExecContext(ctx, query, args))
 
 	// NOTE: 方式2: 方便查看sql和参数，便于日志输出
 	// query, argv, err := sqlx.Named(sql, args)
@@ -239,7 +239,8 @@ func (r *bookRepo) Update(ctx context.Context, book *models.Book) error {
 		return err
 	}
 
-	return updateErrorHandler(r.DB.ExecContext(ctx, query, argv...))
+	result, err := r.DB.ExecContext(ctx, query, argv...)
+	return dbtk.updateErrorHandler(ctx, result, err)
 }
 
 // UpdateTx 通过事务更新图书，同时更新bookCategory表
@@ -335,7 +336,7 @@ func (r *bookRepo) List(ctx context.Context, f Filters) (*PageQueryVo, error) {
 	err = r.DB.SelectContext(ctx, &list, query, f.limit(), f.offset())
 
 	vo.List = list
-	vo.Metadata = calculateMetadata(total, f.PageNum, f.PageSize)
+	vo.Metadata = dbtk.calculateMetadata(total, f.PageNum, f.PageSize)
 
 	return &vo, err
 }
@@ -390,7 +391,7 @@ func (r *bookRepo) ListByCategory(ctx context.Context, categoryID uint64, f Filt
 
 	err = r.DB.SelectContext(ctx, &list, query, categoryID)
 	vo.List = list
-	vo.Metadata = calculateMetadata(total, f.PageNum, f.PageSize)
+	vo.Metadata = dbtk.calculateMetadata(total, f.PageNum, f.PageSize)
 
 	return &vo, err
 }
@@ -603,7 +604,7 @@ func (r *bookRepo) ListByAuthor(ctx context.Context, authorID uint64, f Filters)
 
 	list, err = r.listCategoryByBooks(ctx, list)
 	vo.List = list
-	vo.Metadata = calculateMetadata(total, f.PageNum, f.PageSize)
+	vo.Metadata = dbtk.calculateMetadata(total, f.PageNum, f.PageSize)
 
 	return &vo, err
 }
@@ -659,7 +660,7 @@ func (r *bookRepo) ListByPublisher(ctx context.Context, publisherID uint64, f Fi
 
 	list, err = r.listCategoryByBooks(ctx, list)
 	vo.List = list
-	vo.Metadata = calculateMetadata(total, f.PageNum, f.PageSize)
+	vo.Metadata = dbtk.calculateMetadata(total, f.PageNum, f.PageSize)
 
 	return &vo, err
 }
@@ -672,7 +673,8 @@ func (r *bookRepo) Delete(ctx context.Context, id uint64) error {
 	query := r.DB.Rebind(sql)
 	slog.DebugContext(ctx, query, slog.Int64("id", int64(id)))
 
-	return updateErrorHandler(r.DB.ExecContext(ctx, query, id))
+	result, err := r.DB.ExecContext(ctx, query, id)
+	return dbtk.updateErrorHandler(ctx, result, err)
 }
 
 // sortSafelist 导出默认的安全排序字段

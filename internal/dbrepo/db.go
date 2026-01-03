@@ -12,15 +12,15 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
+	"github.com/lightsaid/ebook/internal/config"
 )
 
 var (
-	Db *sqlx.DB
-	// rex = regexp.MustCompile(`[\t \n]`)
+	Db       *sqlx.DB
 	spaceRex = regexp.MustCompile(`\s+`)
 
 	// 内部使用的工具,提取出来，方便使用，不用记忆多个工具函数名字
-	// 通过 dbtk. 智能提示即可
+	// 通过 dbtk.xxx 智能提示即可
 	dbtk = toolkit{}
 )
 
@@ -57,14 +57,14 @@ type Queryable interface {
 	SelectContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error
 }
 
-func Open() (*sqlx.DB, error) {
+func Open(conf config.DbConfig) (*sqlx.DB, error) {
 	dsn := fmt.Sprintf(
 		"%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
-		"root",
-		"root.cc",
-		"127.0.0.1",
-		3306,
-		"db_ebook",
+		conf.DbUser,
+		conf.DbPswd,
+		conf.DbHost,
+		conf.DbPort,
+		conf.DbName,
 	)
 
 	db, err := sqlx.Connect("mysql", dsn)
@@ -91,22 +91,24 @@ func Close() {
 	}
 }
 
-// defaultSortSafelist 导出默认的安全排序字段
+// baseRepo 基础接口定义在这里
 type baseRepo interface {
+	// defaultSortSafelist 导出默认的安全排序字段
 	defaultSortSafelist() []string
 }
 
 // 内部使用的工具箱 toolkit
 type toolkit struct{}
 
-// debugSQL 使用sqlx.Named 和 db.Rebind 处理sql并输出sql日志
+// debugSQL 使用sqlx.Named 和 db.Rebind 处理sql并输出sql日志，返回新的sql和参数
+// 因此sql语句中的参数必须是sqlx :param 格式参数
 //
-// arg 必须为结构体或者map，struct(带db tag)
+// arg 必须为结构体或者map(key为数据库字段)，struct(带db tag)
 func (*toolkit) debugSQL(ctx context.Context, db Queryable, sql string, arg any) (string, []any, error) {
-	// 使用 sqlx.Named 把 :param 转换成统一 ? 占位符，并生成 args
+	// 使用 sqlx.Named 把 :param 统一转换为'?'占位符，并生成 args slice
 	query, args, err := sqlx.Named(sql, arg)
 	if err != nil {
-		slog.ErrorContext(ctx, "debugSQL->sqlx.Named(sql,arg)", "error", err)
+		slog.DebugContext(ctx, "debugSQL->sqlx.Named(sql,arg)", "error", err)
 		return "", nil, err
 	}
 
@@ -117,10 +119,10 @@ func (*toolkit) debugSQL(ctx context.Context, db Queryable, sql string, arg any)
 	cleanSQL := spaceRex.ReplaceAllString(query, " ")
 
 	// 输出 log
-	slog.InfoContext(ctx, "debugSQL SQL", slog.String("sql", cleanSQL))
-	slog.InfoContext(ctx, "debugSQL Args", slog.Any("args", args))
+	slog.DebugContext(ctx, "debugSQL SQL", slog.String("sql", cleanSQL))
+	slog.DebugContext(ctx, "debugSQL Args", slog.Any("args", args))
 
-	return query, args, nil
+	return cleanSQL, args, nil
 }
 
 // execTx 执行事务公共方法
@@ -150,7 +152,72 @@ func (*toolkit) withTimeout(ctx context.Context) (context.Context, context.Cance
 	return context.WithTimeout(ctx, 5*time.Second)
 }
 
-// makeWithTimeout 创建一个超时上下文
-func (*toolkit) makeWithTimeout() (context.Context, context.CancelFunc) {
-	return context.WithTimeout(context.Background(), 5*time.Second)
+// insertErrorHandler 公共处理新增数据的错误
+func (*toolkit) insertErrorHandler(ctx context.Context, result sql.Result, err error) (uint64, error) {
+	if err != nil {
+		slog.DebugContext(ctx, "dbtk.updateErrorHandler: "+err.Error())
+		return 0, err
+	}
+	newID, err := result.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+	if newID <= 0 {
+		return 0, ErrInsertIDZero
+	}
+	return uint64(newID), nil
+}
+
+// updateErrorHandler 公共处理更新数据的错误
+func (*toolkit) updateErrorHandler(ctx context.Context, result sql.Result, err error) error {
+	if err != nil {
+		slog.DebugContext(ctx, "dbtk.updateErrorHandler: "+err.Error())
+		return err
+	}
+
+	_, err = result.RowsAffected()
+	if err != nil {
+		slog.DebugContext(ctx, "dbtk.updateErrorHandler RowsAffected fail: "+err.Error())
+		return err
+	}
+	return nil
+
+	// eff, err := result.RowsAffected()
+	// if err != nil {
+	// 	return err
+	// }
+
+	// // NOTE: 如果数据存在，但是并没有改变任何值，result.RowsAffected()也是会返回0的
+	// // 通常在更新之前都会先查询一遍，因此这里可以允许为0
+	// if eff <= 0 {
+	// 	return sql.ErrNoRows
+	// }
+	// return nil
+}
+
+// dbtk.calculateMetadata 计算分页数据
+func (*toolkit) calculateMetadata(totalCount, pageNum, pageSize int) Metadata {
+	if totalCount == 0 {
+		return Metadata{}
+	}
+
+	return Metadata{
+		PageNum:    pageNum,
+		PageSize:   pageSize,
+		LastPage:   (totalCount + pageSize - 1) / pageSize,
+		TotalCount: totalCount,
+	}
+}
+
+// dbtk.makePageQueryVo 构建统一返回数据,extras 是额外数据，有则返回第一个
+func (*toolkit) makePageQueryVo(metadata Metadata, list any, extras ...any) *PageQueryVo {
+	var extra any
+	if len(extras) > 0 {
+		extra = extras[0]
+	}
+	return &PageQueryVo{
+		List:      list,
+		Metadata:  metadata,
+		ExtraData: extra,
+	}
 }

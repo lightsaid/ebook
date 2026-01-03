@@ -9,5 +9,5 @@ CREATE TABLE IF NOT EXISTS `shopping_carts` (
   UNIQUE KEY `uniq_user_book` (`user_id`, `book_id`),
   INDEX `idx_user_id` (`user_id`),
   INDEX `idx_book_id` (`book_id`),
-  INDEX `idx_created_at` (`created_at`),
+  INDEX `idx_created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

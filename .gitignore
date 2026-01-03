@@ -22,3 +22,6 @@ go.work
 
 
 *.draft.md
+
+# 配置文件
+*.env

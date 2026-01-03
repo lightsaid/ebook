@@ -12,6 +12,7 @@ type UserRepo interface {
 	Delete(ctx context.Context, userID uint64) error
 	Update(ctx context.Context, user *models.User) error
 	Get(ctx context.Context, userID uint64) (*models.User, error)
+	GetByUqField(ctx context.Context, uq UserUq) (*models.User, error)
 	List(ctx context.Context, filter Filters) (*PageQueryVo, error)
 }
 
@@ -51,17 +52,16 @@ func (r *userRepo) Create(ctx context.Context, user *models.User) (uint64, error
 	}
 
 	result, err := r.DB.ExecContext(ctx, query, arg...)
-	return insertErrorHandler(result, err)
+	return dbtk.insertErrorHandler(ctx, result, err)
 }
 
 func (r *userRepo) Delete(ctx context.Context, userID uint64) error {
-	query := `update users set deleted_at=now() where id=?`
+	query := r.DB.Rebind(`update users set deleted_at=now() where id=?`)
 	ctx, cancel := dbtk.withTimeout(ctx)
 	defer cancel()
 
-	query = r.DB.Rebind(query)
-
-	return updateErrorHandler(r.DB.ExecContext(ctx, query, userID))
+	result, err := r.DB.ExecContext(ctx, query, userID)
+	return dbtk.updateErrorHandler(ctx, result, err)
 }
 
 func (r *userRepo) Update(ctx context.Context, user *models.User) error {
@@ -84,11 +84,11 @@ func (r *userRepo) Update(ctx context.Context, user *models.User) error {
 	}
 
 	result, err := r.DB.ExecContext(ctx, query, arg...)
-	return updateErrorHandler(result, err)
+	return dbtk.updateErrorHandler(ctx, result, err)
 }
 
 func (r *userRepo) Get(ctx context.Context, userID uint64) (*models.User, error) {
-	query := r.DB.Rebind(`select * from users where id = ?`)
+	query := r.DB.Rebind(`select * from users where id = ? and deleted_at is null;`)
 
 	ctx, cancel := dbtk.withTimeout(ctx)
 	defer cancel()
@@ -98,7 +98,34 @@ func (r *userRepo) Get(ctx context.Context, userID uint64) (*models.User, error)
 	return user, err
 }
 
+type UserUq struct {
+	ID    uint64
+	Email string
+}
+
+// GetByUqField 根据唯一字段查询单个用户信息 uq 提供id或email即可，
+// 如果两者都不提供，则返回 ErrNotFound
+func (r *userRepo) GetByUqField(ctx context.Context, uq UserUq) (*models.User, error) {
+	if uq.ID > 0 {
+		return r.Get(ctx, uq.ID)
+	}
+
+	if uq.Email == "" {
+		return nil, ErrNotFound
+	}
+	query := r.DB.Rebind(`select * from users where email = ? and deleted_at is null;`)
+
+	ctx, cancel := dbtk.withTimeout(ctx)
+	defer cancel()
+
+	user := new(models.User)
+	err := r.DB.GetContext(ctx, user, query, uq.Email)
+	return user, err
+}
+
 func (r *userRepo) List(ctx context.Context, filter Filters) (*PageQueryVo, error) {
+	// 检查分页设置
+	filter.check()
 	query := fmt.Sprintf(`
 	select 
 		id,
@@ -120,32 +147,23 @@ func (r *userRepo) List(ctx context.Context, filter Filters) (*PageQueryVo, erro
 	defer cancel()
 
 	list := make([]*models.User, 0)
-	stmt, err := r.DB.PreparexContext(ctx, query)
-	if err != nil {
-		return nil, err
-	}
-	defer stmt.Close()
 
-	err = stmt.SelectContext(ctx, &list, query, filter.limit(), filter.offset())
+	err := r.DB.SelectContext(ctx, &list, query, filter.limit(), filter.offset())
 	if err != nil {
 		return nil, err
 	}
 
 	totalQuery := `select count(*) as total from users where deleted_at is null`
-	stmt, err = r.DB.PreparexContext(ctx, totalQuery)
-	if err != nil {
-		return nil, err
-	}
 
 	var total = 0
-	err = stmt.Get(totalQuery, &total)
+	err = r.DB.GetContext(ctx, &total, totalQuery)
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("========", filter)
+	metadata := dbtk.calculateMetadata(total, filter.PageNum, filter.PageSize)
 
-	metadata := calculateMetadata(total, filter.PageNum, filter.PageSize)
-
-	vo := makePageQueryVo(metadata, list)
+	vo := dbtk.makePageQueryVo(metadata, list)
 
 	return vo, nil
 }

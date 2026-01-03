@@ -99,36 +99,9 @@ type Metadata struct {
 	TotalCount int `json:"totalCount,omitzero"`
 }
 
-// calculateMetadata 计算分页数据
-func calculateMetadata(totalCount, pageNum, pageSize int) Metadata {
-	if totalCount == 0 {
-		return Metadata{}
-	}
-
-	return Metadata{
-		PageNum:    pageNum,
-		PageSize:   pageSize,
-		LastPage:   (totalCount + pageSize - 1) / pageSize,
-		TotalCount: totalCount,
-	}
-}
-
 // PageQueryVo 分页数据通用结构体，意在分页数据返回统一结构体
 type PageQueryVo struct {
 	List      any      `json:"list"`
 	Metadata  Metadata `json:"metadata"`
 	ExtraData any      `json:"extraData,omitempty"`
-}
-
-// makePageQueryVo 构建统一返回数据,extras 是额外数据，有则返回第一个
-func makePageQueryVo(metadata Metadata, list any, extras ...any) *PageQueryVo {
-	var extra any
-	if len(extras) > 0 {
-		extra = extras[0]
-	}
-	return &PageQueryVo{
-		List:      list,
-		Metadata:  metadata,
-		ExtraData: extra,
-	}
 }
