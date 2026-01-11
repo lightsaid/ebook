@@ -84,17 +84,17 @@ const docTemplate = `{
         "models.Author": {
             "type": "object",
             "properties": {
-                "UpdatedAt": {
-                    "$ref": "#/definitions/types.GxTime"
-                },
                 "authorName": {
                     "type": "string"
                 },
                 "createdAt": {
-                    "$ref": "#/definitions/types.GxTime"
+                    "type": "string"
                 },
                 "id": {
                     "type": "integer"
+                },
+                "updatedAt": {
+                    "type": "string"
                 }
             }
         },

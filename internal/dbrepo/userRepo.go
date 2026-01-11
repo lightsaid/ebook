@@ -3,6 +3,7 @@ package dbrepo
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/lightsaid/ebook/internal/models"
 )
@@ -143,6 +144,8 @@ func (r *userRepo) List(ctx context.Context, filter Filters) (*PageQueryVo, erro
 
 	query = r.DB.Rebind(query)
 
+	slog.DebugContext(ctx, query)
+
 	ctx, cancel := dbtk.withTimeout(ctx)
 	defer cancel()
 
@@ -160,7 +163,7 @@ func (r *userRepo) List(ctx context.Context, filter Filters) (*PageQueryVo, erro
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("========", filter)
+
 	metadata := dbtk.calculateMetadata(total, filter.PageNum, filter.PageSize)
 
 	vo := dbtk.makePageQueryVo(metadata, list)

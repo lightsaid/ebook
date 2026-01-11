@@ -57,8 +57,18 @@ api:
 crm:
 	go run ./cmd/crm/*.go -env "./configs/develop.env" -env "./configs/crm.develop.env"
 
+## swag doc https://github.com/swaggo/swag
 swag/api:
-	swag init -g cmd/api/main.go -o ./docs/api
+	swag init \
+		-d	./cmd/api,./internal,./pkg \
+		-g	main.go \
+		-o	./docs/api
 
 swag/crm:
-	swag init -g cmd/crm/main.go -o ./docs/crm
+	swag init \
+		-d	./cmd/crm,./internal,./pkg \
+		-g	main.go \
+		-o	./docs/crm
+
+swag/fmt:
+	swag fmt -d ./ --exclude ./internal

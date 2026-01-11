@@ -3,6 +3,7 @@ package dbcache
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/lightsaid/ebook/internal/config"
 	"github.com/redis/go-redis/v9"
@@ -21,4 +22,11 @@ func Open(conf config.RedisConfig) (*redis.Client, error) {
 	}
 
 	return rdb, nil
+}
+
+func Close() {
+	err := rdb.Close()
+	if err != nil {
+		slog.Warn("close redis error: " + err.Error())
+	}
 }

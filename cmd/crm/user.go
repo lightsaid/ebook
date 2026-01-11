@@ -3,8 +3,10 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
+	"github.com/lightsaid/ebook/internal/dbcache"
 	"github.com/lightsaid/ebook/internal/dbrepo"
 	"github.com/lightsaid/ebook/internal/types"
 	"github.com/lightsaid/ebook/pkg/errs"
@@ -12,7 +14,20 @@ import (
 	"github.com/tomasen/realip"
 )
 
-// SignIn 处理登录逻辑，role必须为1
+const (
+	adminRole = 1 // 管理员角色
+)
+
+// SignIn godoc
+//
+//	@Summary		管理员登录
+//	@Description	管理员登录逻辑处理，role必须为1
+//	@Tags			User
+//	@Accept			json
+//	@Produce		json
+//	@Param			payload	body		SignInRequest	true	"登录入参"
+//	@Success		200		{object}	int
+//	@Router			/v1/signin [post]
 func (app *Application) SignIn(w http.ResponseWriter, r *http.Request) {
 	var input SignInRequest
 
@@ -30,7 +45,7 @@ func (app *Application) SignIn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 判断权限
-	if user.Role != 1 {
+	if user.Role != adminRole {
 		app.FAIL(w, r, errs.ErrForbidden)
 		return
 	}
@@ -70,8 +85,13 @@ func (app *Application) SignIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: 存储 用户信息到redis
-	// user::id
+	// 缓存用户信息到redis
+	err = cache.UserCache.SaveUser(r.Context(), user)
+	if err != nil {
+		a := dbcache.ConvertToApiError(err)
+		app.FAIL(w, r, a)
+		return
+	}
 
 	// 组合返回数据
 	data := gotk.Map{"accessToken": aToken, "refreshToken": rToken, "user": user}
@@ -79,15 +99,51 @@ func (app *Application) SignIn(w http.ResponseWriter, r *http.Request) {
 	app.SUCC(w, r, data)
 }
 
-// UpdateProfile 更新个人信息
+// UpdateProfile 更新个人信息（仅对avatar、nickname修改）
 func (app *Application) UpdateProfile(w http.ResponseWriter, r *http.Request) {
+	user := app.GetUserCtx(r)
+	var input UpdateProfileRequest
+	if ok := app.ReadJSONAndCheck(w, r, &input); !ok {
+		return
+	}
+	if input.Avatar != "" {
+		user.Avatar = input.Avatar
+	}
+	if input.Nickname != "" {
+		user.Nickname = input.Nickname
+	}
+	err := store.UserRepo.Update(r.Context(), user)
+	if err != nil {
+		a := dbrepo.ConvertToApiError(err)
+		app.FAIL(w, r, a)
+		return
+	}
 
+	app.SUCC(w, r, "修改成功")
 }
 
+// RenewAccessToken 根据refreshToken刷新accessToken
 func (app *Application) RenewAccessToken(w http.ResponseWriter, r *http.Request) {
+	var input RenewAccessTokenRequest
+	if ok := app.ReadJSONAndCheck(w, r, &input); !ok {
+		return
+	}
+	_, userId, ok := app.CheckToken(w, r, input.RefreshToken)
+	if !ok {
+		return
+	}
+	idText := strconv.Itoa(int(userId))
+	payload := gotk.NewTokenPayload(idText, app.config.JWTConfig.AccessToknExpires)
+	token, err := app.jwt.GenToken(payload)
+	if err != nil {
+		app.FAIL(w, r, errs.ErrServerError.WithError(err))
+		return
+	}
 
+	app.SUCC(w, r, token)
 }
 
+// RestPassword 重置密码，通过旧密码修改
 func (app *Application) RestPassword(w http.ResponseWriter, r *http.Request) {
 	var input RestPasswordRequest
 	if ok := app.ReadJSONAndCheck(w, r, &input); !ok {
@@ -119,6 +175,7 @@ func (app *Application) RestPassword(w http.ResponseWriter, r *http.Request) {
 	app.SUCC(w, r, "修改密码成功")
 }
 
+// GetListUser 获取用户列表
 func (app *Application) GetListUser(w http.ResponseWriter, r *http.Request) {
 	filter := app.ReadPageQuery(r)
 	vo, err := store.UserRepo.List(r.Context(), filter)

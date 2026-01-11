@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/lightsaid/ebook/internal/config"
+	"github.com/lightsaid/ebook/internal/dbcache"
 	"github.com/lightsaid/ebook/internal/dbrepo"
 )
 
@@ -61,11 +62,12 @@ func (app *Application) serve(logger *slog.Logger) error {
 
 		log.Println("执行释放资源操作")
 		dbrepo.Close()
+		dbcache.Close()
 
 		shutdownError <- nil
 	}()
 
-	log.Println("start api server on ", srv.Addr)
+	fmt.Println("start api server on ", srv.Addr)
 	err := srv.ListenAndServe()
 	if !errors.Is(err, http.ErrServerClosed) {
 		return err

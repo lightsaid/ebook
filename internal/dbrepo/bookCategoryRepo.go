@@ -79,7 +79,7 @@ func (r *bookCategoryRepo) ListByBookID(ctx context.Context, bookID uint64) (lis
 	ctx, cancel := dbtk.withTimeout(ctx)
 	defer cancel()
 
-	slog.InfoContext(ctx, sql, "book_id", slog.Int64Value(int64(bookID)))
+	slog.DebugContext(ctx, sql, "book_id", slog.Int64Value(int64(bookID)))
 
 	err = r.DB.SelectContext(ctx, &list, sql, bookID)
 	return list, err
@@ -91,7 +91,7 @@ func (r *bookCategoryRepo) ListByCategoryID(ctx context.Context, categoryID uint
 	ctx, cancel := dbtk.withTimeout(ctx)
 	defer cancel()
 
-	slog.InfoContext(ctx, sql, "category_id", slog.Int64Value(int64(categoryID)))
+	slog.DebugContext(ctx, sql, "category_id", slog.Int64Value(int64(categoryID)))
 
 	err = r.DB.SelectContext(ctx, &list, sql, categoryID)
 	return list, err
@@ -103,7 +103,7 @@ func (r *bookCategoryRepo) DeleteByBookID(ctx context.Context, bookID uint64) er
 	ctx, cancel := dbtk.withTimeout(ctx)
 	defer cancel()
 
-	slog.InfoContext(ctx, sql, "book_id", slog.Int64Value(int64(bookID)))
+	slog.DebugContext(ctx, sql, "book_id", slog.Int64Value(int64(bookID)))
 
 	result, err := r.DB.ExecContext(ctx, sql, bookID)
 	return dbtk.updateErrorHandler(ctx, result, err)
@@ -115,7 +115,7 @@ func (r *bookCategoryRepo) DeleteByCategoryID(ctx context.Context, categoryID ui
 	ctx, cancel := dbtk.withTimeout(ctx)
 	defer cancel()
 
-	slog.InfoContext(ctx, sql, "category_id", slog.Int64Value(int64(categoryID)))
+	slog.DebugContext(ctx, sql, "category_id", slog.Int64Value(int64(categoryID)))
 
 	result, err := r.DB.ExecContext(ctx, sql, categoryID)
 	return dbtk.updateErrorHandler(ctx, result, err)

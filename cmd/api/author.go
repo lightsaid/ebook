@@ -7,7 +7,6 @@ import (
 	"github.com/lightsaid/ebook/internal/models"
 )
 
-// PostAuthorHandler
 func (app *Application) PostAuthorHandler(w http.ResponseWriter, r *http.Request) {
 	var author models.Author
 	if ok := app.ShouldBindJSONAndCheck(w, r, &author); !ok {

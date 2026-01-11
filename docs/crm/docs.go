@@ -9,20 +9,22 @@ const docTemplate = `{
     "info": {
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
-        "contact": {},
+        "contact": {
+            "name": "LightSaid",
+            "email": "lightsaid@foxmail.com"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/v1/book": {
+        "/v1/author": {
             "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "用户创建图书",
+                "description": "添加一个作者到管理系统",
                 "consumes": [
                     "application/json"
                 ],
@@ -30,17 +32,268 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "book"
+                    "Author"
                 ],
-                "summary": "创建图书",
+                "summary": "添加作者",
                 "parameters": [
                     {
-                        "description": "EBook payload",
+                        "description": "添加作者请求体",
+                        "name": "author",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/main.AuthorNameReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/main.ApiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/author/{id}": {
+            "get": {
+                "description": "根据id获取一个作者",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Author"
+                ],
+                "summary": "获取作者",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "作者id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/main.ApiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.Author"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "添加一个作者到管理系统",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Author"
+                ],
+                "summary": "更新作者",
+                "parameters": [
+                    {
+                        "description": "添加作者请求体",
+                        "name": "author",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/main.AuthorNameReq"
+                        }
+                    },
+                    {
+                        "type": "integer",
+                        "description": "作者id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/main.ApiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "根据id删除一个作者",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Author"
+                ],
+                "summary": "删除作者",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "作者id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/main.ApiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/authors": {
+            "get": {
+                "description": "分页获取作者列表",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Author"
+                ],
+                "summary": "获取作者列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "页码",
+                        "name": "pageNum",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页多少条",
+                        "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "排序字段",
+                        "name": "sortFields",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/main.ApiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/definitions/dbrepo.PageQueryVo"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "list": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "$ref": "#/definitions/models.Author"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/signin": {
+            "post": {
+                "description": "管理员登录逻辑处理，role必须为1",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "管理员登录",
+                "parameters": [
+                    {
+                        "description": "登录入参",
                         "name": "payload",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Book"
+                            "$ref": "#/definitions/main.SignInRequest"
                         }
                     }
                 ],
@@ -50,160 +303,95 @@ const docTemplate = `{
                         "schema": {
                             "type": "integer"
                         }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {}
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {}
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {}
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {}
                     }
                 }
             }
         }
     },
     "definitions": {
+        "dbrepo.Metadata": {
+            "type": "object",
+            "properties": {
+                "lastPage": {
+                    "type": "integer"
+                },
+                "pageNum": {
+                    "type": "integer"
+                },
+                "pageSize": {
+                    "type": "integer"
+                },
+                "totalCount": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dbrepo.PageQueryVo": {
+            "type": "object",
+            "properties": {
+                "extraData": {},
+                "list": {},
+                "metadata": {
+                    "$ref": "#/definitions/dbrepo.Metadata"
+                }
+            }
+        },
+        "main.ApiResponse": {
+            "type": "object",
+            "properties": {
+                "bizCode": {
+                    "description": "业务编码",
+                    "type": "string"
+                },
+                "data": {
+                    "description": "任意数据"
+                },
+                "message": {
+                    "description": "客户消息",
+                    "type": "string"
+                },
+                "requestId": {
+                    "description": "请求Id，做简单的链路追踪",
+                    "type": "string"
+                },
+                "version": {
+                    "description": "版本信息",
+                    "type": "string"
+                }
+            }
+        },
+        "main.AuthorNameReq": {
+            "type": "object",
+            "properties": {
+                "authorName": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.SignInRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
         "models.Author": {
             "type": "object",
             "properties": {
-                "UpdatedAt": {
-                    "$ref": "#/definitions/types.GxTime"
-                },
                 "authorName": {
                     "type": "string"
                 },
                 "createdAt": {
-                    "$ref": "#/definitions/types.GxTime"
-                },
-                "id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "models.Book": {
-            "type": "object",
-            "properties": {
-                "author": {
-                    "$ref": "#/definitions/models.Author"
-                },
-                "authorId": {
-                    "type": "integer"
-                },
-                "categories": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.Category"
-                    }
-                },
-                "coverUrl": {
-                    "type": "string"
-                },
-                "createdAt": {
-                    "$ref": "#/definitions/types.GxTime"
-                },
-                "description": {
                     "type": "string"
                 },
                 "id": {
-                    "type": "integer"
-                },
-                "isbn": {
-                    "type": "string"
-                },
-                "price": {
-                    "description": "价格,单位分",
-                    "type": "integer"
-                },
-                "pubdate": {
-                    "$ref": "#/definitions/types.GxTime"
-                },
-                "publisher": {
-                    "$ref": "#/definitions/models.Publisher"
-                },
-                "publisherId": {
-                    "type": "integer"
-                },
-                "sourceUrl": {
-                    "type": "string"
-                },
-                "status": {
-                    "description": "0-下架,1-上架",
-                    "type": "integer"
-                },
-                "stock": {
-                    "type": "integer"
-                },
-                "subtitle": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                },
-                "type": {
-                    "description": "1-电子书,2-实体,3-电子书+实体",
                     "type": "integer"
                 },
                 "updatedAt": {
-                    "$ref": "#/definitions/types.GxTime"
-                },
-                "version": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.Category": {
-            "type": "object",
-            "properties": {
-                "categoryName": {
-                    "type": "string"
-                },
-                "createdAt": {
-                    "$ref": "#/definitions/types.GxTime"
-                },
-                "icon": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "sort": {
-                    "type": "integer"
-                },
-                "updatedAt": {
-                    "$ref": "#/definitions/types.GxTime"
-                }
-            }
-        },
-        "models.Publisher": {
-            "type": "object",
-            "properties": {
-                "createdAt": {
-                    "$ref": "#/definitions/types.GxTime"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "publisherName": {
-                    "type": "string"
-                },
-                "updatedAt": {
-                    "$ref": "#/definitions/types.GxTime"
-                }
-            }
-        },
-        "types.GxTime": {
-            "type": "object",
-            "properties": {
-                "time.Time": {
                     "type": "string"
                 }
             }
@@ -213,12 +401,12 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "",
-	Host:             "",
-	BasePath:         "",
+	Version:          "1.0",
+	Host:             "localhost:4567",
+	BasePath:         "/api",
 	Schemes:          []string{},
-	Title:            "",
-	Description:      "",
+	Title:            "EBook Admin API",
+	Description:      "EBook 后台管理API",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

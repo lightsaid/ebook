@@ -34,8 +34,18 @@ type Application struct {
 	}
 }
 
-func main() {
+//	@title			EBook Admin API
+//	@version		1.0
+//	@description	EBook 后台管理API
 
+//	@contact.name	LightSaid
+//	@contact.email	lightsaid@foxmail.com
+
+// @license.name	Apache 2.0
+// @license.url	http://www.apache.org/licenses/LICENSE-2.0.html
+// @host			localhost:4567
+// @BasePath		/api
+func main() {
 	// 解析命令行参数获取配置文件
 	var envFiles types.ArrayString
 	flag.Var(&envFiles, "env", "配置文件，支持指定多个")
@@ -76,12 +86,13 @@ func main() {
 	// 创建数据crud实例
 	store = dbrepo.NewRepository(conn)
 
-	// 与redis建立连接
+	// 与redis建立连接，创建redis客户端
 	rdb, err := dbcache.Open(app.config.RedisConfig)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
+	// redis crud实例
 	cache = dbcache.NewRepository(rdb)
 
 	// 启动接口服务

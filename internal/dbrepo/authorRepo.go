@@ -76,25 +76,13 @@ func (r *authorRepo) Get(ctx context.Context, id uint64) (author *models.Author,
 	ctx, cancal := dbtk.withTimeout(ctx)
 	defer cancal()
 
-	slog.InfoContext(ctx, sql, slog.Int64("id", int64(id)))
-
 	err = r.DB.GetContext(ctx, author, sql, id)
 	return author, err
 }
 
 // List 分页获取
 func (r *authorRepo) List(ctx context.Context, f Filters) (*PageQueryVo, error) {
-	// 如果没有使用默认的
-	if len(f.SortSafelist) == 0 {
-		f.SortSafelist = r.defaultSortSafelist()
-	}
-
-	sortFields := f.sortColumn(r)
-
-	// 提供默认
-	if sortFields == "" {
-		sortFields = "id ASC"
-	}
+	sortFields := f.sortColumnWithDefault(r)
 
 	sql := fmt.Sprintf(
 		`select 
@@ -110,7 +98,7 @@ func (r *authorRepo) List(ctx context.Context, f Filters) (*PageQueryVo, error) 
 
 	query := r.DB.Rebind(sql)
 
-	slog.InfoContext(
+	slog.DebugContext(
 		ctx,
 		spaceRex.ReplaceAllString(query, " "),
 		slog.String("sort", sortFields),
@@ -153,7 +141,7 @@ func (r *authorRepo) Delete(ctx context.Context, id uint64) error {
 	ctx, cancal := dbtk.withTimeout(ctx)
 	defer cancal()
 
-	slog.InfoContext(ctx, sql, slog.Int64("id", int64(id)))
+	slog.DebugContext(ctx, sql, slog.Int64("id", int64(id)))
 
 	result, err := r.DB.ExecContext(ctx, sql, id)
 	return dbtk.updateErrorHandler(ctx, result, err)

@@ -1,109 +1,235 @@
+basePath: /api
 definitions:
+  dbrepo.Metadata:
+    properties:
+      lastPage:
+        type: integer
+      pageNum:
+        type: integer
+      pageSize:
+        type: integer
+      totalCount:
+        type: integer
+    type: object
+  dbrepo.PageQueryVo:
+    properties:
+      extraData: {}
+      list: {}
+      metadata:
+        $ref: '#/definitions/dbrepo.Metadata'
+    type: object
+  main.ApiResponse:
+    properties:
+      bizCode:
+        description: 业务编码
+        type: string
+      data:
+        description: 任意数据
+      message:
+        description: 客户消息
+        type: string
+      requestId:
+        description: 请求Id，做简单的链路追踪
+        type: string
+      version:
+        description: 版本信息
+        type: string
+    type: object
+  main.AuthorNameReq:
+    properties:
+      authorName:
+        type: string
+    type: object
+  main.SignInRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
   models.Author:
     properties:
-      UpdatedAt:
-        $ref: '#/definitions/types.GxTime'
       authorName:
         type: string
       createdAt:
-        $ref: '#/definitions/types.GxTime'
-      id:
-        type: integer
-    type: object
-  models.Book:
-    properties:
-      author:
-        $ref: '#/definitions/models.Author'
-      authorId:
-        type: integer
-      categories:
-        items:
-          $ref: '#/definitions/models.Category'
-        type: array
-      coverUrl:
-        type: string
-      createdAt:
-        $ref: '#/definitions/types.GxTime'
-      description:
         type: string
       id:
-        type: integer
-      isbn:
-        type: string
-      price:
-        description: 价格,单位分
-        type: integer
-      pubdate:
-        $ref: '#/definitions/types.GxTime'
-      publisher:
-        $ref: '#/definitions/models.Publisher'
-      publisherId:
-        type: integer
-      sourceUrl:
-        type: string
-      status:
-        description: 0-下架,1-上架
-        type: integer
-      stock:
-        type: integer
-      subtitle:
-        type: string
-      title:
-        type: string
-      type:
-        description: 1-电子书,2-实体,3-电子书+实体
         type: integer
       updatedAt:
-        $ref: '#/definitions/types.GxTime'
-      version:
         type: string
     type: object
-  models.Category:
-    properties:
-      categoryName:
-        type: string
-      createdAt:
-        $ref: '#/definitions/types.GxTime'
-      icon:
-        type: string
-      id:
-        type: integer
-      sort:
-        type: integer
-      updatedAt:
-        $ref: '#/definitions/types.GxTime'
-    type: object
-  models.Publisher:
-    properties:
-      createdAt:
-        $ref: '#/definitions/types.GxTime'
-      id:
-        type: integer
-      publisherName:
-        type: string
-      updatedAt:
-        $ref: '#/definitions/types.GxTime'
-    type: object
-  types.GxTime:
-    properties:
-      time.Time:
-        type: string
-    type: object
+host: localhost:4567
 info:
-  contact: {}
+  contact:
+    email: lightsaid@foxmail.com
+    name: LightSaid
+  description: EBook 后台管理API
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  title: EBook Admin API
+  version: "1.0"
 paths:
-  /v1/book:
+  /v1/author:
     post:
       consumes:
       - application/json
-      description: 用户创建图书
+      description: 添加一个作者到管理系统
       parameters:
-      - description: EBook payload
+      - description: 添加作者请求体
+        in: body
+        name: author
+        required: true
+        schema:
+          $ref: '#/definitions/main.AuthorNameReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/main.ApiResponse'
+            - properties:
+                data:
+                  type: integer
+              type: object
+      summary: 添加作者
+      tags:
+      - Author
+  /v1/author/{id}:
+    delete:
+      description: 根据id删除一个作者
+      parameters:
+      - description: 作者id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/main.ApiResponse'
+            - properties:
+                data:
+                  type: integer
+              type: object
+      summary: 删除作者
+      tags:
+      - Author
+    get:
+      consumes:
+      - application/json
+      description: 根据id获取一个作者
+      parameters:
+      - description: 作者id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/main.ApiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Author'
+              type: object
+      summary: 获取作者
+      tags:
+      - Author
+    put:
+      consumes:
+      - application/json
+      description: 添加一个作者到管理系统
+      parameters:
+      - description: 添加作者请求体
+        in: body
+        name: author
+        required: true
+        schema:
+          $ref: '#/definitions/main.AuthorNameReq'
+      - description: 作者id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/main.ApiResponse'
+            - properties:
+                data:
+                  type: integer
+              type: object
+      summary: 更新作者
+      tags:
+      - Author
+  /v1/authors:
+    get:
+      description: 分页获取作者列表
+      parameters:
+      - description: 页码
+        in: query
+        name: pageNum
+        type: integer
+      - description: 每页多少条
+        in: query
+        name: pageSize
+        type: integer
+      - collectionFormat: csv
+        description: 排序字段
+        in: query
+        items:
+          type: string
+        name: sortFields
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/main.ApiResponse'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/dbrepo.PageQueryVo'
+                  - properties:
+                      list:
+                        items:
+                          $ref: '#/definitions/models.Author'
+                        type: array
+                    type: object
+              type: object
+      summary: 获取作者列表
+      tags:
+      - Author
+  /v1/signin:
+    post:
+      consumes:
+      - application/json
+      description: 管理员登录逻辑处理，role必须为1
+      parameters:
+      - description: 登录入参
         in: body
         name: payload
         required: true
         schema:
-          $ref: '#/definitions/models.Book'
+          $ref: '#/definitions/main.SignInRequest'
       produces:
       - application/json
       responses:
@@ -111,21 +237,7 @@ paths:
           description: OK
           schema:
             type: integer
-        "400":
-          description: Bad Request
-          schema: {}
-        "401":
-          description: Unauthorized
-          schema: {}
-        "404":
-          description: Not Found
-          schema: {}
-        "500":
-          description: Internal Server Error
-          schema: {}
-      security:
-      - ApiKeyAuth: []
-      summary: 创建图书
+      summary: 管理员登录
       tags:
-      - book
+      - User
 swagger: "2.0"

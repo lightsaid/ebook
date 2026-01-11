@@ -80,7 +80,7 @@ func (r *categoryRepo) Get(ctx context.Context, id uint64) (*models.Category, er
 
 	cleanSQL := spaceRex.ReplaceAllString(sql, " ")
 
-	slog.InfoContext(ctx, cleanSQL, "id", id)
+	slog.DebugContext(ctx, cleanSQL, "id", id)
 
 	category := new(models.Category)
 	err := r.DB.GetContext(ctx, category, sql, id)
@@ -95,7 +95,7 @@ func (r *categoryRepo) List(ctx context.Context) (list []*models.Category, err e
 
 	sql = r.DB.Rebind(sql)
 
-	slog.InfoContext(ctx, sql)
+	slog.DebugContext(ctx, sql)
 
 	err = r.DB.SelectContext(ctx, &list, sql)
 	return list, err
@@ -106,7 +106,7 @@ func (r *categoryRepo) Delete(ctx context.Context, id uint64) error {
 
 	sql = r.DB.Rebind(sql)
 
-	slog.InfoContext(ctx, sql, "id", id)
+	slog.DebugContext(ctx, sql, "id", id)
 
 	result, err := r.DB.Exec(sql, id)
 

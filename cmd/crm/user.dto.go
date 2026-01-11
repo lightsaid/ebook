@@ -44,3 +44,24 @@ func (u *RestPasswordRequest) Verifiy(v *gotk.Validator) {
 	v.Check(u.NewPassword == u.AgainNewPassword, "newPassword", "两次密码不一致")
 	v.Check(len([]rune(u.NewPassword)) >= 6, "newPassword", "密码长度必须>=6")
 }
+
+type UpdateProfileRequest struct {
+	Nickname string `db:"nickname" json:"nickname"`
+	Avatar   string `db:"avatar" json:"avatar"`
+}
+
+func (u *UpdateProfileRequest) Verifiy(v *gotk.Validator) {
+	u.Avatar = strings.TrimSpace(u.Avatar)
+	u.Nickname = strings.TrimSpace(u.Nickname)
+	if u.Avatar == "" && u.Nickname == "" {
+		v.AddError("nickname", "请填写用户昵称或头像地址")
+	}
+}
+
+type RenewAccessTokenRequest struct {
+	RefreshToken string `json:"refreshToken"`
+}
+
+func (u *RenewAccessTokenRequest) Verifiy(v *gotk.Validator) {
+	v.Check(u.RefreshToken != "", "refreshToken", "请提供令牌")
+}
