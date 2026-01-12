@@ -8,7 +8,16 @@ import (
 	"github.com/lightsaid/ebook/pkg/errs"
 )
 
-// PostCategoryHandler 处理创建分类
+// PostCategoryHandler godoc
+//
+//	@Summary		添加分类
+//	@Description	添加一个分类到管理系统
+//	@Tags			Category
+//	@Accept			json
+//	@Produce		json
+//	@Param			payload	body		 models.Category	true	"添加分类请求体"
+//	@Success		200		{object}	ApiResponse{data=int}
+//	@Router			/v1/category [post]
 func (app *Application) PostCategoryHandler(w http.ResponseWriter, r *http.Request) {
 	var c models.Category
 
@@ -31,7 +40,17 @@ func (app *Application) PostCategoryHandler(w http.ResponseWriter, r *http.Reque
 	app.SUCC(w, r, newID)
 }
 
-// GetCategoryHandler 获取一个分类
+// GetCategoryHandler godoc
+//
+// @Summary 获取一个分类
+// @Description 根据id获取分类
+//
+//	@Tags			Category
+//	@Accept			json
+//	@Produce		json
+//	@Param			id	path		int	true	"category id"
+//	@Success		200	{object}	ApiResponse{data=models.Category}
+//	@Router			/v1/banner/{id} [get]
 func (app *Application) GetCategoryHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := app.ReadIntParam(r, "id")
 	if err != nil {
@@ -49,7 +68,17 @@ func (app *Application) GetCategoryHandler(w http.ResponseWriter, r *http.Reques
 	app.SUCC(w, r, category)
 }
 
-// PutCategoryHandler 更新分类
+// PutCategoryHandler godoc
+//
+//	@Summary		更新分类
+//	@Description	根据id更新分类
+//	@Tags			Category
+//	@Accept			json
+//	@Produce		json
+//	@Param			payload	body		models.Category	true	"更新分类请求体"
+//	@Param			id		path		int				true	"category id"
+//	@Success		200		{object}	ApiResponse{data=int}
+//	@Router			/v1/category/{id} [put]
 func (app *Application) PutCategoryHandler(w http.ResponseWriter, r *http.Request) {
 	id, aerr := app.ReadIntParam(r, "id")
 	if aerr != nil {
@@ -92,7 +121,15 @@ func (app *Application) PutCategoryHandler(w http.ResponseWriter, r *http.Reques
 
 }
 
-// DeleteCategoryHandler 删除一个分类
+// DeleteCategoryHandler godoc
+//
+//	@Summary		删除一个分类
+//	@Description	根据id删除一个分类
+//	@Tags			Category
+//	@Produce		json
+//	@Param			id		path		int				true	"category id"
+//	@Success		200		{object}	ApiResponse{data=int}
+//	@Router			/v1/category/{id} [delete]
 func (app *Application) DeleteCategoryHandler(w http.ResponseWriter, r *http.Request) {
 	id, aerr := app.ReadIntParam(r, "id")
 	if aerr != nil {
@@ -119,6 +156,14 @@ func (app *Application) DeleteCategoryHandler(w http.ResponseWriter, r *http.Req
 	app.SUCC(w, r, errs.ErrOK)
 }
 
+// ListCategoryHandler godoc
+//
+//	@Summary		获取分类列表
+//	@Description	获取分类列表，没分页
+//	@Tags			Category
+//	@Produce		json
+//	@Success		200			{object}	ApiResponse{data=[]models.Category}
+//	@Router			/v1/categories [get]
 func (app *Application) ListCategoryHandler(w http.ResponseWriter, r *http.Request) {
 	list, err := store.CategoryRepo.List(r.Context())
 	if err != nil {

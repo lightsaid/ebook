@@ -14,10 +14,10 @@ type User struct {
 	Nickname  string        `db:"nickname" json:"nickname"`
 	Avatar    string        `db:"avatar" json:"avatar"`
 	Role      int           `db:"role" json:"role"`
-	LoginAt   *types.GxTime `db:"login_at" json:"loginAt"`
+	LoginAt   *types.GxTime `db:"login_at" json:"loginAt" swaggertype:"string"`
 	LoginIP   *string       `db:"login_ip" json:"loginIp"`
-	CreatedAt types.GxTime  `db:"created_at" json:"createdAt"`
-	UpdatedAt types.GxTime  `db:"updated_at" json:"updatedAt"`
+	CreatedAt types.GxTime  `db:"created_at" json:"createdAt" swaggertype:"string"`
+	UpdatedAt types.GxTime  `db:"updated_at" json:"updatedAt" swaggertype:"string"`
 	DeletedAt *time.Time    `db:"deleted_at" json:"-"`
 }
 

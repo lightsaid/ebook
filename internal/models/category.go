@@ -13,8 +13,8 @@ type Category struct {
 	CategoryName string       `db:"category_name" json:"categoryName"`
 	Icon         string       `db:"icon" json:"icon"`
 	Sort         int          `db:"sort" json:"sort"`
-	CreatedAt    types.GxTime `db:"created_at" json:"createdAt"`
-	UpdatedAt    types.GxTime `db:"updated_at" json:"updatedAt"`
+	CreatedAt    types.GxTime `db:"created_at" json:"createdAt" swaggertype:"string"`
+	UpdatedAt    types.GxTime `db:"updated_at" json:"updatedAt" swaggertype:"string"`
 	DeletedAt    *time.Time   `db:"deleted_at" json:"-"`
 }
 

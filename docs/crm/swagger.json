@@ -267,6 +267,609 @@
                 }
             }
         },
+        "/v1/banner": {
+            "post": {
+                "description": "添加一个banner到管理系统",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Banner"
+                ],
+                "summary": "添加banner",
+                "parameters": [
+                    {
+                        "description": "添加banner请求体",
+                        "name": "banner",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Banner"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/main.ApiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/banner/{id}": {
+            "get": {
+                "description": "根据id获取分类",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Category"
+                ],
+                "summary": "获取一个分类",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "category id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/main.ApiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.Category"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "根据id更新banner",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Banner"
+                ],
+                "summary": "更新banner",
+                "parameters": [
+                    {
+                        "description": "更新banner请求体",
+                        "name": "banner",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Banner"
+                        }
+                    },
+                    {
+                        "type": "integer",
+                        "description": "banner id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/main.ApiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "根据id删除一个banner",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Banner"
+                ],
+                "summary": "删除banner",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "banner id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/main.ApiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/banners": {
+            "get": {
+                "description": "获取banner列表，没分页",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Banner"
+                ],
+                "summary": "获取banner列表",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/main.ApiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.Banner"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/categories": {
+            "get": {
+                "description": "获取分类列表，没分页",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Category"
+                ],
+                "summary": "获取分类列表",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/main.ApiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.Category"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/category": {
+            "post": {
+                "description": "添加一个分类到管理系统",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Category"
+                ],
+                "summary": "添加分类",
+                "parameters": [
+                    {
+                        "description": "添加分类请求体",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Category"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/main.ApiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/category/{id}": {
+            "put": {
+                "description": "根据id更新分类",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Category"
+                ],
+                "summary": "更新分类",
+                "parameters": [
+                    {
+                        "description": "更新分类请求体",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Category"
+                        }
+                    },
+                    {
+                        "type": "integer",
+                        "description": "category id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/main.ApiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "根据id删除一个分类",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Category"
+                ],
+                "summary": "删除一个分类",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "category id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/main.ApiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/publisher": {
+            "post": {
+                "description": "添加一个出版社到管理系统",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Publisher"
+                ],
+                "summary": "添加出版社",
+                "parameters": [
+                    {
+                        "description": "添加出版社请求体",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Publisher"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/main.ApiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/publisher/{id}": {
+            "get": {
+                "description": "根据id获取出版社",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Publisher"
+                ],
+                "summary": "获取一个出版社",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "publisher id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/main.ApiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.Publisher"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "根据id更新出版社",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Publisher"
+                ],
+                "summary": "更新出版社",
+                "parameters": [
+                    {
+                        "description": "更新出版社请求体",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Publisher"
+                        }
+                    },
+                    {
+                        "type": "integer",
+                        "description": "publisher id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/main.ApiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "根据id删除一个出版社",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Publisher"
+                ],
+                "summary": "删除一个出版社",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "publisher id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/main.ApiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/publishers": {
+            "get": {
+                "description": "获取出版社列表，没分页",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Publisher"
+                ],
+                "summary": "获取出版列表",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/main.ApiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.Publisher"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/v1/signin": {
             "post": {
                 "description": "管理员登录逻辑处理，role必须为1",
@@ -386,6 +989,86 @@
                     "type": "integer"
                 },
                 "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Banner": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "$ref": "#/definitions/types.GxTime"
+                },
+                "enable": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "imageUrl": {
+                    "type": "string"
+                },
+                "linkType": {
+                    "type": "integer"
+                },
+                "linkUrl": {
+                    "type": "string"
+                },
+                "slogan": {
+                    "type": "string"
+                },
+                "sort": {
+                    "type": "integer"
+                },
+                "updatedAt": {
+                    "$ref": "#/definitions/types.GxTime"
+                }
+            }
+        },
+        "models.Category": {
+            "type": "object",
+            "properties": {
+                "categoryName": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "$ref": "#/definitions/types.GxTime"
+                },
+                "icon": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "sort": {
+                    "type": "integer"
+                },
+                "updatedAt": {
+                    "$ref": "#/definitions/types.GxTime"
+                }
+            }
+        },
+        "models.Publisher": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "$ref": "#/definitions/types.GxTime"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "publisherName": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "$ref": "#/definitions/types.GxTime"
+                }
+            }
+        },
+        "types.GxTime": {
+            "type": "object",
+            "properties": {
+                "time.Time": {
                     "type": "string"
                 }
             }

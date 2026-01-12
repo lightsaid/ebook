@@ -58,6 +58,58 @@ definitions:
       updatedAt:
         type: string
     type: object
+  models.Banner:
+    properties:
+      createdAt:
+        $ref: '#/definitions/types.GxTime'
+      enable:
+        type: integer
+      id:
+        type: integer
+      imageUrl:
+        type: string
+      linkType:
+        type: integer
+      linkUrl:
+        type: string
+      slogan:
+        type: string
+      sort:
+        type: integer
+      updatedAt:
+        $ref: '#/definitions/types.GxTime'
+    type: object
+  models.Category:
+    properties:
+      categoryName:
+        type: string
+      createdAt:
+        $ref: '#/definitions/types.GxTime'
+      icon:
+        type: string
+      id:
+        type: integer
+      sort:
+        type: integer
+      updatedAt:
+        $ref: '#/definitions/types.GxTime'
+    type: object
+  models.Publisher:
+    properties:
+      createdAt:
+        $ref: '#/definitions/types.GxTime'
+      id:
+        type: integer
+      publisherName:
+        type: string
+      updatedAt:
+        $ref: '#/definitions/types.GxTime'
+    type: object
+  types.GxTime:
+    properties:
+      time.Time:
+        type: string
+    type: object
 host: localhost:4567
 info:
   contact:
@@ -218,6 +270,362 @@ paths:
       summary: 获取作者列表
       tags:
       - Author
+  /v1/banner:
+    post:
+      consumes:
+      - application/json
+      description: 添加一个banner到管理系统
+      parameters:
+      - description: 添加banner请求体
+        in: body
+        name: banner
+        required: true
+        schema:
+          $ref: '#/definitions/models.Banner'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/main.ApiResponse'
+            - properties:
+                data:
+                  type: integer
+              type: object
+      summary: 添加banner
+      tags:
+      - Banner
+  /v1/banner/{id}:
+    delete:
+      description: 根据id删除一个banner
+      parameters:
+      - description: banner id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/main.ApiResponse'
+            - properties:
+                data:
+                  type: integer
+              type: object
+      summary: 删除banner
+      tags:
+      - Banner
+    get:
+      consumes:
+      - application/json
+      description: 根据id获取分类
+      parameters:
+      - description: category id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/main.ApiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Category'
+              type: object
+      summary: 获取一个分类
+      tags:
+      - Category
+    put:
+      consumes:
+      - application/json
+      description: 根据id更新banner
+      parameters:
+      - description: 更新banner请求体
+        in: body
+        name: banner
+        required: true
+        schema:
+          $ref: '#/definitions/models.Banner'
+      - description: banner id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/main.ApiResponse'
+            - properties:
+                data:
+                  type: integer
+              type: object
+      summary: 更新banner
+      tags:
+      - Banner
+  /v1/banners:
+    get:
+      description: 获取banner列表，没分页
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/main.ApiResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.Banner'
+                  type: array
+              type: object
+      summary: 获取banner列表
+      tags:
+      - Banner
+  /v1/categories:
+    get:
+      description: 获取分类列表，没分页
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/main.ApiResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.Category'
+                  type: array
+              type: object
+      summary: 获取分类列表
+      tags:
+      - Category
+  /v1/category:
+    post:
+      consumes:
+      - application/json
+      description: 添加一个分类到管理系统
+      parameters:
+      - description: 添加分类请求体
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/models.Category'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/main.ApiResponse'
+            - properties:
+                data:
+                  type: integer
+              type: object
+      summary: 添加分类
+      tags:
+      - Category
+  /v1/category/{id}:
+    delete:
+      description: 根据id删除一个分类
+      parameters:
+      - description: category id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/main.ApiResponse'
+            - properties:
+                data:
+                  type: integer
+              type: object
+      summary: 删除一个分类
+      tags:
+      - Category
+    put:
+      consumes:
+      - application/json
+      description: 根据id更新分类
+      parameters:
+      - description: 更新分类请求体
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/models.Category'
+      - description: category id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/main.ApiResponse'
+            - properties:
+                data:
+                  type: integer
+              type: object
+      summary: 更新分类
+      tags:
+      - Category
+  /v1/publisher:
+    post:
+      consumes:
+      - application/json
+      description: 添加一个出版社到管理系统
+      parameters:
+      - description: 添加出版社请求体
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/models.Publisher'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/main.ApiResponse'
+            - properties:
+                data:
+                  type: integer
+              type: object
+      summary: 添加出版社
+      tags:
+      - Publisher
+  /v1/publisher/{id}:
+    delete:
+      description: 根据id删除一个出版社
+      parameters:
+      - description: publisher id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/main.ApiResponse'
+            - properties:
+                data:
+                  type: integer
+              type: object
+      summary: 删除一个出版社
+      tags:
+      - Publisher
+    get:
+      consumes:
+      - application/json
+      description: 根据id获取出版社
+      parameters:
+      - description: publisher id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/main.ApiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Publisher'
+              type: object
+      summary: 获取一个出版社
+      tags:
+      - Publisher
+    put:
+      consumes:
+      - application/json
+      description: 根据id更新出版社
+      parameters:
+      - description: 更新出版社请求体
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/models.Publisher'
+      - description: publisher id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/main.ApiResponse'
+            - properties:
+                data:
+                  type: integer
+              type: object
+      summary: 更新出版社
+      tags:
+      - Publisher
+  /v1/publishers:
+    get:
+      description: 获取出版社列表，没分页
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/main.ApiResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.Publisher'
+                  type: array
+              type: object
+      summary: 获取出版列表
+      tags:
+      - Publisher
   /v1/signin:
     post:
       consumes:

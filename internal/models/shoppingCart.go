@@ -9,8 +9,8 @@ type ShoppingCart struct {
 	UserID    uint64       `db:"user_id" json:"userId"`
 	BookID    uint64       `db:"book_id" json:"bookId"`
 	Quantity  uint         `db:"quantity" json:"quantity"`
-	CreatedAt types.GxTime `db:"created_at" json:"createdAt"`
-	UpdatedAt types.GxTime `db:"updated_at" json:"updatedAt"`
+	CreatedAt types.GxTime `db:"created_at" json:"createdAt" swaggertype:"string"`
+	UpdatedAt types.GxTime `db:"updated_at" json:"updatedAt" swaggertype:"string"`
 }
 
 type SQLShoppingCart struct {

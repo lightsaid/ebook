@@ -9,7 +9,16 @@ import (
 	"github.com/lightsaid/ebook/internal/types"
 )
 
-// PostBannerHandler
+// PostBannerHandler godoc
+//
+//	@Summary		添加banner
+//	@Description	添加一个banner到管理系统
+//	@Tags			Banner
+//	@Accept			json
+//	@Produce		json
+//	@Param			banner	body		 models.Banner	true	"添加banner请求体"
+//	@Success		200		{object}	ApiResponse{data=int}
+//	@Router			/v1/banner [post]
 func (app *Application) PostBannerHandler(w http.ResponseWriter, r *http.Request) {
 	var banner models.Banner
 	if ok := app.ReadJSONAndCheck(w, r, &banner); !ok {
@@ -26,7 +35,17 @@ func (app *Application) PostBannerHandler(w http.ResponseWriter, r *http.Request
 	app.SUCC(w, r, id)
 }
 
-// GetBannerHandler
+// GetBannerHandler godoc
+//
+// @Summary 获取banner
+// @Description 根据id获取banner
+//
+//	@Tags			Banner
+//	@Accept			json
+//	@Produce		json
+//	@Param			id	path		int	true	"banner id"
+//	@Success		200	{object}	ApiResponse{data=models.Banner}
+//	@Router			/v1/banner/{id} [get]
 func (app *Application) GetBannerHandler(w http.ResponseWriter, r *http.Request) {
 	id, a := app.ReadIntParam(r, "id")
 	if a != nil {
@@ -42,7 +61,17 @@ func (app *Application) GetBannerHandler(w http.ResponseWriter, r *http.Request)
 	app.SUCC(w, r, data)
 }
 
-// PutBannerHandler
+// PutBannerHandler godoc
+//
+//	@Summary		更新banner
+//	@Description	根据id更新banner
+//	@Tags			Banner
+//	@Accept			json
+//	@Produce		json
+//	@Param			banner	body		models.Banner	true	"更新banner请求体"
+//	@Param			id		path		int				true	"banner id"
+//	@Success		200		{object}	ApiResponse{data=int}
+//	@Router			/v1/banner/{id} [put]
 func (app *Application) PutBannerHandler(w http.ResponseWriter, r *http.Request) {
 	var banner models.Banner
 	if ok := app.ReadJSONAndCheck(w, r, &banner); !ok {
@@ -80,7 +109,15 @@ func (app *Application) PutBannerHandler(w http.ResponseWriter, r *http.Request)
 	app.SUCC(w, r, id)
 }
 
-// DeleteBannerHandler
+// DeleteBannerHandler godoc
+//
+//	@Summary		删除banner
+//	@Description	根据id删除一个banner
+//	@Tags			Banner
+//	@Produce		json
+//	@Param			id		path		int				true	"banner id"
+//	@Success		200		{object}	ApiResponse{data=int}
+//	@Router			/v1/banner/{id} [delete]
 func (app *Application) DeleteBannerHandler(w http.ResponseWriter, r *http.Request) {
 	id, a := app.ReadIntParam(r, "id")
 	if a != nil {
@@ -99,7 +136,14 @@ func (app *Application) DeleteBannerHandler(w http.ResponseWriter, r *http.Reque
 
 }
 
-// ListBannerHandler
+// ListBannerHandler godoc
+//
+//	@Summary		获取banner列表
+//	@Description	获取banner列表，没分页
+//	@Tags			Banner
+//	@Produce		json
+//	@Success		200			{object}	ApiResponse{data=[]models.Banner}
+//	@Router			/v1/banners [get]
 func (app *Application) ListBannerHandler(w http.ResponseWriter, r *http.Request) {
 	list, err := store.BannerRepo.List(r.Context())
 	if err != nil {

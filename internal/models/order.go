@@ -12,9 +12,9 @@ type Order struct {
 	UserID      uint64        `db:"user_id" json:"userId"`
 	OrderStatus int           `db:"order_status" json:"orderStatus"`
 	OrderAmount uint          `db:"order_amount" json:"orderAmount"`
-	PaidAt      *types.GxTime `db:"paid_at" json:"paidAt"`
-	CreatedAt   types.GxTime  `db:"created_at" json:"createdAt"`
-	UpdatedAt   types.GxTime  `db:"updated_at" json:"updatedAt"`
+	PaidAt      *types.GxTime `db:"paid_at" json:"paidAt" swaggertype:"string"`
+	CreatedAt   types.GxTime  `db:"created_at" json:"createdAt" swaggertype:"string"`
+	UpdatedAt   types.GxTime  `db:"updated_at" json:"updatedAt" swaggertype:"string"`
 	DeletedAt   *time.Time    `db:"deleted_at" json:"-"`
 }
 
