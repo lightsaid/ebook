@@ -4,7 +4,7 @@ import {
   BrowserRouter as Router,
   useRoutes,
 } from "react-router-dom";
-import router from "@/routes"; // 导入路由配置
+import { router } from "@/routes"; // 导入路由配置
 
 // 使用 useRoutes 渲染路由
 const AppRoutes: React.FC = () => {

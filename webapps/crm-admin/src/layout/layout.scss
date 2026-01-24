@@ -1,0 +1,91 @@
+$sidebar-width: 200px;
+$sidebar-width-collapsed: 64px;
+$header-height: 56px;
+$primary-color: #0d6efd;
+
+.layout-sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 1000;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-x: hidden;
+  white-space: nowrap;
+  background-color: #fff;
+  border-right: 1px solid #dee2e6;
+
+  &.normal { width: $sidebar-width; }
+  &.collapsed { width: $sidebar-width-collapsed; }
+
+  .logo {
+    width: 100%;
+    height: $header-height;
+    padding: 0 20px;
+    overflow: hidden;
+    svg { font-size: 24px; min-width: 24px; }
+    span { margin-left: 12px; transition: opacity 0.2s; }
+  }
+
+  .nav-link-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    color: rgba(0,0,0,0.7);
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover { background-color: #f8f9fa; color: $primary-color; }
+    &.active { background-color: #e7f1ff; color: $primary-color; font-weight: 500; }
+
+    .icon-wrapper {
+      min-width: 24px;
+      display: flex;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .menu-text {
+      margin-left: 12px;
+      flex: 1;
+    }
+
+    .arrow-icon {
+      display: flex;
+      align-items: center;
+      transition: transform 0.3s;
+      &.rotated { transform: rotate(90deg); }
+    }
+  }
+
+  .sidebar-submenu {
+    background-color: #fafafa;
+    .nav-link-item { padding-left: 22px; font-size: 0.9rem; }
+  }
+}
+
+// 悬浮菜单样式
+.sidebar-popover {
+  border: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  .popover-menu-title {
+    padding: 10px 15px;
+    font-weight: bold;
+    border-bottom: 1px solid #eee;
+    color: #333;
+  }
+  .popover-item {
+    display: block;
+    padding: 8px 15px;
+    color: #666;
+    text-decoration: none;
+    &:hover { background-color: #f8f9fa; color: $primary-color; }
+    &.active { color: $primary-color; background-color: #e7f1ff; }
+  }
+}
+
+.layout-body {
+  margin-left: $sidebar-width;
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  &.collapsed { margin-left: $sidebar-width-collapsed; }
+}
