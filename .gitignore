@@ -28,3 +28,6 @@ go.work
 
 # 构建文件
 bin
+
+# example
+bootstrap-5.3.8-examples

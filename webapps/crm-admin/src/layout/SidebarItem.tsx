@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Nav, Collapse, OverlayTrigger, Popover } from "react-bootstrap";
+import { Nav, Collapse, Overlay, Popover } from "react-bootstrap";
 import { useAppStore } from "@/store/app";
 import { clsx } from "clsx";
 import { type MenuItem } from "@/routes";
 import { FaChevronRight } from "react-icons/fa6";
+// import FloatingMenu from "./FloatingMenu";
 
 const SidebarItem: React.FC<{
   item: MenuItem;
@@ -24,7 +25,10 @@ const SidebarItem: React.FC<{
 
   const [open, setOpen] = useState(false);
 
-  // 逻辑 1 & 2: 监听路由和折叠状态
+  const [showFloatingMenu, setShowFloatingMenu] = useState(false);
+  const target = useRef(null);
+
+  // 监听路由和折叠状态
   useEffect(() => {
     if (isCollapsed) {
       setOpen(false); // 折叠时，关闭所有二级菜单内容
@@ -42,7 +46,12 @@ const SidebarItem: React.FC<{
     setOpen(!open);
   };
 
-  // 逻辑 3: 折叠时的悬浮窗渲染
+  const floatingMenuToggle = () => {
+    if (!isCollapsed) return;
+    setShowFloatingMenu(!showFloatingMenu);
+  };
+
+  //  折叠时的悬浮窗渲染
   const renderFloatingMenu = (
     <Popover id={`popover-${item.path}`} className="sidebar-popover">
       <Popover.Body className="p-0">
@@ -50,12 +59,13 @@ const SidebarItem: React.FC<{
         {item.children?.map((child) => (
           <Link
             key={child.path}
-            to={child.path}
+            to={child.path!}
             className={clsx(
               "popover-item",
               location.pathname === child.path && "active"
             )}
           >
+            {/* TODO: 要区分子级菜单 */}
             {child.name}
           </Link>
         ))}
@@ -70,15 +80,33 @@ const SidebarItem: React.FC<{
         (isActive || (hasActiveChild && isCollapsed)) && "active"
       )}
       as={item.children ? "div" : Link}
+      // 停止to属性误报
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-expect-error
       to={item.children ? undefined : item.path}
       onClick={handleToggle}
+      ref={target}
+      // 鼠标移入移出显示
+      onMouseEnter={floatingMenuToggle}
+      onMouseLeave={floatingMenuToggle}
+      // 捕获到点击事件也执行处理
+      onClickCapture={floatingMenuToggle}
     >
       <div className="icon-wrapper">{item.icon && <item.icon />}</div>
+      <Overlay
+        target={target.current}
+        show={showFloatingMenu}
+        placement="right"
+      >
+        {renderFloatingMenu}
+        {/* {() => <FloatingMenu item={item} />} */}
+      </Overlay>
+
       {!isCollapsed && <span className="menu-text">{item.name}</span>}
       {/* 展开状态下的箭头指示 */}
       {!isCollapsed && item.children && (
         <span className={clsx("arrow-icon", open && "rotated")}>
-          <FaChevronRight  />
+          <FaChevronRight size={15} />
         </span>
       )}
     </Nav.Link>
@@ -86,8 +114,8 @@ const SidebarItem: React.FC<{
 
   return (
     <li className={clsx("sidebar-item-container", level > 1 && "sub-item")}>
-      {/* 如果折叠且有子菜单，使用 OverlayTrigger */}
-      {isCollapsed && item.children ? (
+      {/* 如果折叠且有子菜单，使用 Overlay */}
+      {/* {isCollapsed && item.children ? (
         <OverlayTrigger
           placement="right"
           delay={{ show: 50, hide: 100 }}
@@ -97,7 +125,9 @@ const SidebarItem: React.FC<{
         </OverlayTrigger>
       ) : (
         content
-      )}
+      )} */}
+
+      {content}
 
       {/* 侧边栏展开时的二级列表 */}
       {item.children && !isCollapsed && (

@@ -63,6 +63,41 @@ export const router: MenuItem[] = [
             name: "出版社列表",
             element: <PublisherList />,
           },
+
+          // 测试数据
+          {
+            path: "books2",
+            name: "图书管理2",
+            // icon: BsBookHalf,
+            children: [
+              {
+                // 索引路由：负责重定向
+                index: true,
+                hidden: true,
+                element: <Navigate to="/books/list" replace />,
+              },
+              {
+                path: "list", // 自动拼接成"/books/list"
+                name: "图书列表",
+                element: <BookList />,
+              },
+              {
+                path: "author",
+                name: "作者列表",
+                element: <AuthorList />,
+              },
+              {
+                path: "category",
+                name: "分类列表",
+                element: <CategoryList />,
+              },
+              {
+                path: "publisher",
+                name: "出版社列表",
+                element: <PublisherList />,
+              },
+            ],
+          },
         ],
       },
 
@@ -105,9 +140,9 @@ export const router: MenuItem[] = [
 ];
 
 /**
-  * 根据路由定义生成菜单
-  * 1. 过滤hidden的路由
-  * 2. 过滤后，children仅有一个子项，组合新的菜单，保留一级即可
+ * 根据路由定义生成菜单
+ * 1. 过滤hidden的路由
+ * 2. 过滤后，children仅有一个子项，组合新的菜单，保留一级即可
  */
 export const getMenuData = (items: MenuItem[], parentPath = ""): MenuItem[] => {
   return items
