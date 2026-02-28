@@ -86,7 +86,19 @@ $primary-color: #0d6efd;
 }
 
 .layout-body {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
   margin-left: $sidebar-width;
   transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   &.collapsed { margin-left: $sidebar-width-collapsed; }
+
+  > .layout-main {
+    flex: 1;
+    > div{
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+  }
 }
