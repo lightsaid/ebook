@@ -33,6 +33,7 @@ func TestCreateAuthor(t *testing.T) {
 	_ = createAuthor(t)
 }
 
+// Get 和 Update 测试
 func TestUpdateAuthor(t *testing.T) {
 	a := createAuthor(t)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
@@ -48,15 +49,28 @@ func TestUpdateAuthor(t *testing.T) {
 	require.WithinDuration(t, a2.UpdatedAt.Time, time.Now(), time.Second)
 }
 
-func TestXxx(t *testing.T) {
+// TODO:
+func TestAuthorDelete(t *testing.T) {}
+
+func TestAuthorList(t *testing.T) {
+	var limit = 10
+	for range limit {
+		_ = createAuthor(t)
+	}
+
 	var f = dbrepo.Filters{
 		PageNum:      1,
-		PageSize:     20,
+		PageSize:     limit,
 		SortFields:   []string{"-created_at", "id"},
 		SortSafelist: []string{"id", "-id", "author_name", "-author_name", "created_at", "-created_at"},
 	}
 	vo, err := tRepo.AuthorRepo.List(context.TODO(), f)
 	list := vo.List.([]*models.Author)
 	require.NoError(t, err)
-	require.Equal(t, len(list), 20)
+	require.Equal(t, len(list), limit)
+	require.True(t, vo.Metadata.TotalCount >= limit)
+	require.True(t, vo.Metadata.PageSize == limit)
+
+	// by, _ := json.MarshalIndent(vo, "", " ")
+	// fmt.Println(string(by))
 }

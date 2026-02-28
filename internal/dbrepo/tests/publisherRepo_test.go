@@ -32,3 +32,5 @@ func createPublisher(t *testing.T) *models.Publisher {
 func TestCreatePublisher(t *testing.T) {
 	_ = createPublisher(t)
 }
+
+// TODO: TEST crud

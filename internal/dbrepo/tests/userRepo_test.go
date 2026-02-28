@@ -82,3 +82,5 @@ func TestListUser(t *testing.T) {
 	by, _ := json.MarshalIndent(res, "", " ")
 	fmt.Println(string(by))
 }
+
+// TODO: TEST crud

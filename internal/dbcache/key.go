@@ -3,9 +3,10 @@ package dbcache
 import "fmt"
 
 const (
-	baseKey = "ebook:admin"
+	baseAdminKey  = "ebook:admin"
+	basePortalKey = "ebook:portal"
 )
 
 func userIDKey(id uint64) string {
-	return fmt.Sprintf("%s:user:%d", baseKey, id)
+	return fmt.Sprintf("%s:user:%d", baseAdminKey, id)
 }

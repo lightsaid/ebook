@@ -62,3 +62,9 @@ func TestUpdateCategory(t *testing.T) {
 	require.Equal(t, c3.Icon, c2.Icon)
 	require.Equal(t, c3.Sort, c2.Sort)
 }
+
+// TODO:
+func TestCategoryDelete(t *testing.T) {}
+
+// TODO:
+func TestCategoryList(t *testing.T) {}
